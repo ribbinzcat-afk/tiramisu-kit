@@ -1,0 +1,131 @@
+<div id="tirakit-panel" class="tirakit-panel tirakit-hidden">
+    <div class="tirakit-panel-card">
+        <div class="tirakit-panel-head">
+            <span><i class="fa-solid fa-mug-hot"></i> Tiramisu Kit</span>
+            <span id="tirakit-panel-close" title="ปิด"><i class="fa-solid fa-xmark"></i></span>
+        </div>
+
+        <div class="tirakit-tabs">
+            <div class="tirakit-tab tirakit-tab-active" data-tirakit-tab="modules">โมดูล</div>
+            <div class="tirakit-tab" data-tirakit-tab="cot">CoT</div>
+            <div class="tirakit-tab" data-tirakit-tab="prompts">แก้ Prompt</div>
+            <div class="tirakit-tab" data-tirakit-tab="tokens">โทเคน</div>
+        </div>
+
+        <div class="tirakit-panel-body">
+            <!-- ===== แท็บโมดูล ===== -->
+            <div class="tirakit-tabpane" data-tirakit-pane="modules">
+
+                <div class="tirakit-group">
+                    <div class="tirakit-group-title">🎨 UI Creation <small>(เลือก 1)</small></div>
+                    <select id="tirakit-select-ui" class="text_pole">
+                        <option value="">(ปิด)</option>
+                        <option value="light">Light Mode</option>
+                        <option value="dark">Dark Mode</option>
+                        <option value="jsLight">with JS - Light</option>
+                        <option value="jsDark">with JS - Dark</option>
+                        <option value="custom">Custom Theme</option>
+                    </select>
+                    <label class="tirakit-field" id="tirakit-ui-custom-wrap" style="display:none;">
+                        <span class="tirakit-field-label">สี/เอเลเมนท์/สไตล์ที่ต้องการ (Custom Theme)</span>
+                        <textarea id="tirakit-ui-custom-text" rows="2" placeholder="เช่น โทนพาสเทลชมพู-ม่วง, ขอบมน, ฟอนต์กลม"></textarea>
+                    </label>
+                    <div class="tirakit-inject-row">
+                        <label>ตำแหน่ง <select class="tirakit-pos-select" data-tirakit-group="ui"><option value="1">In-chat (ตามความลึก)</option><option value="0">ท้าย story string</option></select></label>
+                        <label>ความลึก <input type="number" min="0" class="tirakit-depth-input" data-tirakit-group="ui" /></label>
+                    </div>
+                </div>
+
+                <div class="tirakit-group">
+                    <div class="tirakit-group-title">💬 Colorful Dialogue <small>(เลือก 1)</small></div>
+                    <select id="tirakit-select-dialogue" class="text_pole">
+                        <option value="">(ปิด)</option>
+                        <option value="light">Light Mode</option>
+                        <option value="dark">Dark Mode</option>
+                    </select>
+                    <div class="tirakit-inject-row">
+                        <label>ตำแหน่ง <select class="tirakit-pos-select" data-tirakit-group="dialogue"><option value="1">In-chat (ตามความลึก)</option><option value="0">ท้าย story string</option></select></label>
+                        <label>ความลึก <input type="number" min="0" class="tirakit-depth-input" data-tirakit-group="dialogue" /></label>
+                    </div>
+                </div>
+
+                <div class="tirakit-group">
+                    <div class="tirakit-group-title">🎲 RNG Situation</div>
+                    <label class="tirakit-field-row">
+                        <span>เปิด RNG (ทอย d100 เมื่อเปลี่ยนฉาก)</span>
+                        <input id="tirakit-toggle-rng" type="checkbox" />
+                    </label>
+                    <div class="tirakit-inject-row">
+                        <label>ตำแหน่ง <select class="tirakit-pos-select" data-tirakit-group="rng"><option value="1">In-chat (ตามความลึก)</option><option value="0">ท้าย story string</option></select></label>
+                        <label>ความลึก <input type="number" min="0" class="tirakit-depth-input" data-tirakit-group="rng" /></label>
+                    </div>
+                </div>
+
+                <div class="tirakit-group">
+                    <div class="tirakit-group-title">🍰 Tiramisu's UI <small>(เจนแยกได้)</small></div>
+                    <label class="tirakit-field-row"><span>Tiramisu's Log (สถานที่/เวลา/อากาศ/ชุด/ความสัมพันธ์)</span>
+                        <input type="checkbox" class="tirakit-tui-toggle" data-tirakit-id="log" /></label>
+                    <label class="tirakit-field-row"><span>Char's Note (กล่องความคิดตัวละคร)</span>
+                        <input type="checkbox" class="tirakit-tui-toggle" data-tirakit-id="charNote" /></label>
+                    <label class="tirakit-field-row"><span>RPG Status (การ์ดสถานะผู้ใช้)</span>
+                        <input type="checkbox" class="tirakit-tui-toggle" data-tirakit-id="rpgStatus" /></label>
+                    <div class="tirakit-inject-row">
+                        <label>ตำแหน่ง (โหมด single) <select class="tirakit-pos-select" data-tirakit-group="tiramisuUi"><option value="1">In-chat (ตามความลึก)</option><option value="0">ท้าย story string</option></select></label>
+                        <label>ความลึก <input type="number" min="0" class="tirakit-depth-input" data-tirakit-group="tiramisuUi" /></label>
+                    </div>
+                </div>
+
+                <div class="tirakit-group">
+                    <div class="tirakit-group-title">🎭 Mini Theatre <small>(เจนแยกได้)</small></div>
+                    <label class="tirakit-field-row"><span><b>เปิดใช้ Mini Theatre (Art Direction — ต้องเปิดก่อน)</b></span>
+                        <input id="tirakit-theatre-base" type="checkbox" /></label>
+                    <label class="tirakit-field-row tirakit-theatre-sub"><span>Tiramisu Forum (คอมเมนต์ชาวเน็ต)</span>
+                        <input type="checkbox" class="tirakit-theatre-toggle" data-tirakit-id="forum" /></label>
+                    <label class="tirakit-field-row tirakit-theatre-sub"><span>ABO (Omegaverse mini theatre)</span>
+                        <input type="checkbox" class="tirakit-theatre-toggle" data-tirakit-id="abo" /></label>
+                    <label class="tirakit-field-row tirakit-theatre-sub"><span>นักแสดงให้สัมภาษณ์</span>
+                        <input type="checkbox" class="tirakit-theatre-toggle" data-tirakit-id="interview" /></label>
+                    <div class="tirakit-inject-row">
+                        <label>ตำแหน่ง (โหมด single) <select class="tirakit-pos-select" data-tirakit-group="theatre"><option value="1">In-chat (ตามความลึก)</option><option value="0">ท้าย story string</option></select></label>
+                        <label>ความลึก <input type="number" min="0" class="tirakit-depth-input" data-tirakit-group="theatre" /></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== แท็บ CoT ===== -->
+            <div class="tirakit-tabpane tirakit-hidden" data-tirakit-pane="cot">
+                <label class="tirakit-field-row"><span><b>เปิดใช้ Chain of Thought (CoT)</b></span>
+                    <input id="tirakit-cot-enabled" type="checkbox" /></label>
+                <small class="tirakit-hint">โหมดเดียว: กล่องความคิดจะแทรกไปกับ prompt เดียวกับคำตอบ · โหมดแยก: เจน CoT ก่อนแล้วส่งเป็นบริบทให้คำตอบหลักอ้างอิง</small>
+
+                <label class="tirakit-field">
+                    <span class="tirakit-field-label">ความลึก (0 = ไม่จำกัด — ยิ่งน้อย ยิ่งเห็น/ส่งเข้า prompt เฉพาะข้อความหลังสุด)</span>
+                    <input id="tirakit-cot-depth" type="number" min="0" class="text_pole" />
+                </label>
+                <small class="tirakit-hint">กล่องความคิดของข้อความที่ลึกเกินค่านี้จะถูกซ่อนจากจอ และไม่ถูกส่งเข้า prompt รอบถัดไป (ข้อมูลในไฟล์แชทยังอยู่ครบ)</small>
+
+                <label class="tirakit-field-row">
+                    <span>เปิดกล่องความคิดค้างไว้เป็นค่าเริ่มต้น</span>
+                    <input id="tirakit-cot-autoopen" type="checkbox" />
+                </label>
+
+                <label class="tirakit-field">
+                    <span class="tirakit-field-label">จำนวนข้อความล่าสุดที่ส่งเป็นบริบท (เฉพาะโหมดแยก)</span>
+                    <input id="tirakit-cot-ctxmsgs" type="number" min="1" max="30" class="text_pole" />
+                </label>
+            </div>
+
+            <!-- ===== แท็บแก้ Prompt ===== -->
+            <div class="tirakit-tabpane tirakit-hidden" data-tirakit-pane="prompts">
+                <small class="tirakit-hint">แก้ prompt ของแต่ละโมดูล — {{token}} ที่จำเป็น (ถ้ามี) ต้องอยู่ในเทมเพลตเสมอ ส่วน macro ของ SillyTavern เช่น {{char}} {{getvar::x}} ปล่อยผ่านได้ตามปกติ</small>
+                <div id="tirakit-prompt-list"></div>
+            </div>
+
+            <!-- ===== แท็บโทเคน ===== -->
+            <div class="tirakit-tabpane tirakit-hidden" data-tirakit-pane="tokens">
+                <button id="tirakit-refresh-tokens" class="menu_button"><i class="fa-solid fa-rotate"></i> รีเฟรช</button>
+                <div id="tirakit-token-list"></div>
+            </div>
+        </div>
+    </div>
+</div>

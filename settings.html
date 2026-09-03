@@ -1,0 +1,62 @@
+<div class="tirakit-settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b><i class="fa-solid fa-mug-hot"></i> Tiramisu Kit</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <label class="checkbox_label" for="tirakit-enabled">
+                <input id="tirakit-enabled" type="checkbox" />
+                <span>เปิดใช้งาน Tiramisu Kit</span>
+            </label>
+            <small class="tirakit-hint">
+                ยกฟีเจอร์เสริมของพรีเซ็ต Tiramisu (UI Creation / Colorful Dialogue / RNG / Tiramisu's UI / Mini Theatre / CoT)
+                ออกมาเป็น extension ใช้ข้ามพรีเซ็ตได้ — ถ้าเคยเปิด prompt เหล่านี้ในพรีเซ็ตหรือเปิด regex script
+                <b>Tiramisu Log / Char thought / RPG Status</b> ไว้ ให้ปิดทิ้งก่อน ไม่งั้นเนื้อหาจะซ้อนกันสองชั้น
+            </small>
+
+            <label for="tirakit-genmode">โหมดการเจน</label>
+            <select id="tirakit-genmode" class="text_pole">
+                <option value="single">ส่ง prompt ไปทีเดียว (เจน 1 ครั้ง)</option>
+                <option value="split">ส่ง prompt แยกกัน (เจน n ครั้ง — CoT ก่อน, Mini Theatre/Tiramisu's UI ตามหลัง)</option>
+            </select>
+            <small class="tirakit-hint">โหมดแยกใช้กับ CoT / Mini Theatre / Tiramisu's UI เท่านั้น — UI Creation, Colorful Dialogue, RNG แทรกรวมไปกับ prompt หลักเสมอ</small>
+
+            <div class="tirakit-field-2col">
+                <label class="tirakit-field">
+                    <span class="tirakit-field-label">Connection Profile (ค่ารวม)</span>
+                    <select id="tirakit-api-profile" class="text_pole tirakit-profile-select"></select>
+                </label>
+            </div>
+
+            <div class="inline-drawer tirakit-subdrawer">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>Connection Profile แยกตามฟีเจอร์ (ไม่เลือก = ตามค่ารวม)</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <div class="tirakit-field-2col">
+                        <label class="tirakit-field">
+                            <span class="tirakit-field-label">CoT</span>
+                            <select id="tirakit-api-profile-cot" class="text_pole tirakit-profile-select"></select>
+                        </label>
+                        <label class="tirakit-field">
+                            <span class="tirakit-field-label">Mini Theatre</span>
+                            <select id="tirakit-api-profile-theatre" class="text_pole tirakit-profile-select"></select>
+                        </label>
+                    </div>
+                    <div class="tirakit-field-2col">
+                        <label class="tirakit-field">
+                            <span class="tirakit-field-label">Tiramisu's UI</span>
+                            <select id="tirakit-api-profile-tiramisuui" class="text_pole tirakit-profile-select"></select>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button id="tirakit-open-panel" class="menu_button">
+                <i class="fa-solid fa-mug-hot"></i> เปิดแผงตั้งค่าโมดูล
+            </button>
+        </div>
+    </div>
+</div>

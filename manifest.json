@@ -1,0 +1,11 @@
+{
+    "display_name": "Tiramisu Kit",
+    "loading_order": 100,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "taraa723",
+    "version": "1.0.0",
+    "generate_interceptor": "tiramisuKitInterceptor"
+}

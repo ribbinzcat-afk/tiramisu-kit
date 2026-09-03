@@ -1,0 +1,218 @@
+/* ===== Tiramisu Kit — style.css ===== */
+/* Settings drawer / แผงลอย ใช้ธีมของ SillyTavern (var(--SmartTheme*)) — กล่องในหน้าแชท (log/char-note/rpg-status/CoT)
+   ใช้สีทิรามิสุตายตัวเสมอ (เขียนอยู่ใน src/render/templates.js และ src/render/cot-box.js เป็น inline style
+   โดยตรง เพราะเป็นดีไซน์ "ในโลกของเรื่อง" ตั้งใจไม่ตามธีมผู้ใช้ เหมือน regex script ต้นฉบับ — ไม่มี CSS ของกล่อง
+   พวกนี้อยู่ในไฟล์นี้) */
+
+.tirakit-hint {
+    display: block;
+    opacity: 0.75;
+    margin: 4px 0 10px;
+    line-height: 1.4;
+}
+
+.tirakit-field-2col {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.tirakit-field-2col > .tirakit-field {
+    flex: 1 1 200px;
+    min-width: 160px;
+}
+
+.tirakit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 8px 0;
+}
+.tirakit-field-label {
+    font-size: 0.85em;
+    opacity: 0.85;
+}
+.tirakit-field-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 6px 0;
+}
+
+.tirakit-subdrawer {
+    margin-top: 6px;
+}
+
+/* ===== แผงลอย ===== */
+.tirakit-panel {
+    /* top/left/width/height แทน inset:0 โดยตั้งใจ — ST ตั้ง transform บน <html> เพื่อจัดการซูมมือถือของตัวเอง
+     * ทำให้ containing block ของลูก position:fixed กลายเป็นกล่อง <html> (สูง 0px) แทน viewport จริง
+     * inset:0 (เป็น % ของ containing block) เลยได้ height:0 — ต้องใช้หน่วย viewport ตรงๆ (ท่าเดียวกับ tinylive) */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;   /* fallback เบราว์เซอร์เก่า */
+    height: 100dvh;  /* เต็มจอที่มองเห็นจริง */
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+}
+.tirakit-panel.tirakit-hidden {
+    display: none !important;
+}
+.tirakit-panel-card {
+    width: min(900px, 96vw);
+    max-height: 90dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--SmartThemeBlurTintColor, #1e1e1e);
+    color: var(--SmartThemeBodyColor, #eee);
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+.tirakit-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--SmartThemeBorderColor, #444);
+}
+.tirakit-panel-head span[id$="-close"] {
+    cursor: pointer;
+    opacity: 0.7;
+    padding: 4px 8px;
+    min-width: 32px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.tirakit-panel-head span[id$="-close"]:hover {
+    opacity: 1;
+}
+
+.tirakit-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 12px 0;
+    border-bottom: 1px solid var(--SmartThemeBorderColor, #444);
+}
+.tirakit-tab {
+    padding: 8px 14px;
+    cursor: pointer;
+    opacity: 0.65;
+    border-bottom: 2px solid transparent;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+}
+.tirakit-tab-active {
+    opacity: 1;
+    border-bottom-color: var(--SmartThemeQuoteColor, #6ab0f3);
+    font-weight: 600;
+}
+
+.tirakit-panel-body {
+    padding: 14px 16px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+.tirakit-tabpane.tirakit-hidden {
+    display: none !important;
+}
+
+.tirakit-group {
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 10px;
+}
+.tirakit-group-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.tirakit-group-title small {
+    opacity: 0.6;
+    font-weight: 400;
+}
+.tirakit-theatre-sub {
+    padding-left: 16px;
+}
+
+.tirakit-inject-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--SmartThemeBorderColor, #444);
+    font-size: 0.85em;
+}
+.tirakit-inject-row label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.tirakit-inject-row input[type="number"] {
+    width: 70px;
+}
+
+.tirakit-prompt-drawer {
+    margin-bottom: 8px;
+}
+.tirakit-prompt-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: monospace;
+    font-size: 0.85em;
+}
+.tirakit-prompt-warn {
+    color: #e07b39;
+    font-size: 0.8em;
+    margin: 6px 0;
+}
+.tirakit-prompt-reset {
+    margin-top: 4px;
+}
+
+.tirakit-token-card {
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+.tirakit-token-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+.tirakit-token-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85em;
+    opacity: 0.85;
+    padding: 2px 0;
+}
+.tirakit-empty {
+    opacity: 0.6;
+    padding: 20px;
+    text-align: center;
+}
+
+/* ===== มือถือ: แผงเต็มจอ ===== */
+@media (max-width: 768px) {
+    .tirakit-panel-card {
+        width: 100vw;
+        max-height: 100dvh;
+        height: 100dvh;
+        border-radius: 0;
+    }
+}
