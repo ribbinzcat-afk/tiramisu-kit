@@ -12,6 +12,12 @@ import { applyInjections, clearAllInjections } from "./src/inject.js";
 import { tiramisuKitInterceptor, takePendingCot } from "./src/interceptor.js";
 import { runPostGeneration } from "./src/post.js";
 import { sweepAllMessages, sweepOneMessage, clearRenderCache } from "./src/render/mount.js";
+import { BUILTIN_SETS } from "./src/toggle-sets.js";
+import {
+    isPromptManagerAvailable, getCurrentPresetName, detectVariant,
+    getManagedGroupDetails, applySet, snapshotCurrentPicks,
+    getThinkBoxState, setThinkBoxState,
+} from "./src/preset.js";
 
 // ST เรียก generate_interceptor ผ่าน globalThis[key] ตามชื่อที่ประกาศใน manifest.json
 globalThis.tiramisuKitInterceptor = tiramisuKitInterceptor;
@@ -47,6 +53,14 @@ function switchPanelTab(tab) {
     $(".tirakit-tabpane").addClass("tirakit-hidden");
     $(`.tirakit-tabpane[data-tirakit-pane="${tab}"]`).removeClass("tirakit-hidden");
     if (tab === "tokens") renderTokenTab();
+    if (tab === "toggles") renderToggleTab();
+}
+
+// เรียกตอนพรีเซ็ตเปลี่ยน — รีเฟรชแท็บ "ชุด Toggle" เฉพาะตอนเปิดแท็บนั้นค้างอยู่ (ไม่ทำงานเปล่าๆ ตอนไม่ได้ดู)
+function refreshToggleTabIfVisible() {
+    if (!$('.tirakit-tabpane[data-tirakit-pane="toggles"]').hasClass("tirakit-hidden")) {
+        renderToggleTab();
+    }
 }
 
 // ===== ปิดสวิตช์หลักแล้วต้องเงียบสนิท =====
@@ -128,6 +142,7 @@ function loadPanelUi() {
     $("#tirakit-cot-ctxmsgs").val(s.cotContextMessages ?? 6);
 
     renderPromptList();
+    renderToggleTab();
 }
 
 function updateTheatreSubState() {
@@ -170,6 +185,103 @@ function updatePromptWarning(id, text) {
     }
 }
 
+// ===== แท็บชุด Toggle =====
+function findSetByCard($card) {
+    const id = $card.data("tirakit-set-id");
+    const scope = $card.data("tirakit-set-scope");
+    if (scope === "builtin") return BUILTIN_SETS.find((s) => s.id === id);
+    return (getSetting("toggleSets") || []).find((s) => s.id === id);
+}
+
+// groupDetails = ผลจาก getManagedGroupDetails() หรือ null (ตอน Prompt Manager ไม่พร้อม — ไม่ฟันธงว่าตัวไหนหาย)
+function pickMissing(group, name, groupDetails) {
+    if (!groupDetails) return false;
+    const members = groupDetails[group] || [];
+    return !members.some((m) => m.name === name);
+}
+
+function renderSetCard(set, isMine, currentPresetName, groupDetails) {
+    const mismatched = isMine && set.presetName && currentPresetName && set.presetName !== currentPresetName;
+    const rows = Object.entries(set.picks || {}).map(([group, raw]) => {
+        const names = Array.isArray(raw) ? raw : [raw];
+        return names.map((name) => {
+            const missing = pickMissing(group, name, groupDetails);
+            return `<div class="tirakit-set-pick-row${missing ? " tirakit-set-pick-missing" : ""}"><span>${escapeText(group)}</span><span>${escapeText(name)}${missing ? " ⚠️ ไม่พบ" : ""}</span></div>`;
+        }).join("");
+    }).join("");
+
+    return `
+    <div class="tirakit-set-card${mismatched ? " tirakit-set-mismatch" : ""}" data-tirakit-set-id="${escapeAttr(set.id)}" data-tirakit-set-scope="${isMine ? "mine" : "builtin"}">
+        <div class="tirakit-set-head">
+            <div class="tirakit-set-headtext">
+                <div class="tirakit-set-label">${escapeText(set.label)}</div>
+                ${set.desc ? `<div class="tirakit-set-desc">${escapeText(set.desc)}</div>` : ""}
+                ${isMine && set.presetName ? `<div class="tirakit-set-preset">จาก ${escapeText(set.presetName)}${mismatched ? " ⚠️ คนละพรีเซ็ตกับตอนนี้" : ""}</div>` : ""}
+            </div>
+            <div class="tirakit-set-actions">
+                <button class="menu_button tirakit-btn-sm tirakit-set-detail-btn">รายละเอียด</button>
+                <button class="menu_button tirakit-btn-sm tirakit-btn-primary tirakit-set-apply-btn">ใช้ชุดนี้</button>
+                ${isMine ? `<button class="menu_button tirakit-btn-sm tirakit-set-overwrite-btn">เขียนทับ</button><button class="menu_button tirakit-btn-sm tirakit-set-delete-btn">ลบ</button>` : ""}
+            </div>
+        </div>
+        <div class="tirakit-set-detail tirakit-hidden">${rows}</div>
+    </div>`;
+}
+
+function updateThinkBoxWarn() {
+    const checked = $('input[name="tirakit-thinkbox"]:checked').val();
+    const cotOn = Boolean(getSetting("cotEnabled"));
+    $("#tirakit-thinkbox-warn").toggleClass("tirakit-hidden", !(checked === "with" && cotOn));
+}
+
+function renderToggleTab() {
+    const ctx = getContext();
+    const $info = $("#tirakit-toggle-preset-info");
+    const $thinkSection = $("#tirakit-thinkbox-section");
+    const $builtinList = $("#tirakit-toggle-builtin-list");
+    const $mineList = $("#tirakit-toggle-mine-list");
+
+    const available = isPromptManagerAvailable();
+    const presetName = available ? getCurrentPresetName(ctx) : null;
+    const variant = detectVariant(presetName);
+    const variantLabel = variant === "nc" ? "NC" : variant === "sfw" ? "SFW" : null;
+    const groupDetails = available ? getManagedGroupDetails() : null;
+
+    if (!available) {
+        $info.html(`<div class="tirakit-empty">ใช้ "ใช้ชุดนี้" ได้เฉพาะตอนใช้ API แบบ Chat Completion (Prompt Manager ไม่พร้อมใช้งานตอนนี้) — ยังดู/บันทึกชุดของตัวเองได้ปกติ</div>`);
+    } else {
+        $info.html(`
+            <div><b>พรีเซ็ตปัจจุบัน:</b> ${escapeText(presetName || "(ไม่ทราบ)")}</div>
+            ${variantLabel
+                ? `<div class="tirakit-badge">เวอร์ชัน ${variantLabel}</div>`
+                : `<div class="tirakit-hint-inline">ไม่ใช่พรีเซ็ต Tiramisu — ซ่อนชุดสำเร็จรูป เหลือเฉพาะชุดของคุณ</div>`}
+        `);
+    }
+
+    const tb = available ? getThinkBoxState() : null;
+    if (tb) {
+        $thinkSection.removeClass("tirakit-hidden");
+        $('input[name="tirakit-thinkbox"][value="with"]').prop("checked", tb.current === "with");
+        $('input[name="tirakit-thinkbox"][value="without"]').prop("checked", tb.current === "without");
+        updateThinkBoxWarn();
+    } else {
+        $thinkSection.addClass("tirakit-hidden");
+    }
+
+    const visibleBuiltins = variant ? BUILTIN_SETS.filter((s) => s.variant === "any" || s.variant === variant) : [];
+    let builtinEmptyMsg = "ไม่มีชุดสำเร็จรูปที่แสดงได้ตอนนี้";
+    if (!available) builtinEmptyMsg = "รอ Prompt Manager พร้อมใช้งาน (ต้องใช้ API แบบ Chat Completion)";
+    else if (!variant) builtinEmptyMsg = "ใช้ได้เฉพาะพรีเซ็ต Tiramisu";
+    $builtinList.html(visibleBuiltins.length
+        ? visibleBuiltins.map((s) => renderSetCard(s, false, presetName, groupDetails)).join("")
+        : `<div class="tirakit-empty">${builtinEmptyMsg}</div>`);
+
+    const mine = getSetting("toggleSets") || [];
+    $mineList.html(mine.length
+        ? mine.map((s) => renderSetCard(s, true, presetName, groupDetails)).join("")
+        : `<div class="tirakit-empty">ยังไม่มีชุดที่บันทึกไว้</div>`);
+}
+
 // ===== แท็บโทเคน =====
 function renderTokenTab() {
     const $list = $("#tirakit-token-list");
@@ -191,7 +303,12 @@ function renderTokenTab() {
 }
 
 // ===== หลังคำตอบหลักมาถึง (โหมด split): แปะ CoT กลับเข้า mes + สั่งเจน Theatre/Tiramisu UI ตามหลัง =====
-async function handleMessageReceived(ctx, mesId) {
+async function handleMessageReceived(ctx, mesId, type) {
+    // 'first_message' = ข้อความทักทายเริ่มต้นตอนเปิดแชท ไม่ใช่การตอบกลับจริง — ไม่งั้นจะไปแย่งคิวกับการตอบจริง
+    // ที่ตามมา (busyMesIds กันชนแค่ mesId เดียวกัน แต่ถ้าปล่อยให้เจนตามหลังของทักทายวิ่งอยู่เบื้องหลัง ผลลัพธ์
+    // อาจมาถึงช้าแล้วไปแปะผิดที่ในสายตาโดยไม่มีใครสังเกตทัน) และ 'quiet' = การเจนเงียบของฟีเจอร์อื่น ไม่เกี่ยวกับเรา
+    if (type === "first_message" || type === "quiet") return;
+
     const settings = getSettings();
     if (!settings.enabled || settings.genMode !== "split") return;
 
@@ -239,9 +356,16 @@ function bindChatEvents(ctx) {
         eventSource.on(evt, (mesId) => sweepOneMessage(ctx, mesId));
     }
 
-    eventSource.on(eventTypes.MESSAGE_RECEIVED, (mesId) => {
-        handleMessageReceived(ctx, mesId).catch((e) => console.error(`[${extensionName}] handleMessageReceived ล้มเหลว:`, e));
+    eventSource.on(eventTypes.MESSAGE_RECEIVED, (mesId, type) => {
+        handleMessageReceived(ctx, mesId, type).catch((e) => console.error(`[${extensionName}] handleMessageReceived ล้มเหลว:`, e));
     });
+
+    // พรีเซ็ต Chat Completion เปลี่ยน (สลับพรีเซ็ต/นำเข้าใหม่) — รีเฟรชแท็บ "ชุด Toggle" ถ้าเปิดค้างอยู่
+    const presetChangeEvents = [eventTypes.OAI_PRESET_CHANGED_AFTER, eventTypes.PRESET_CHANGED];
+    for (const evt of presetChangeEvents) {
+        if (!evt) continue;
+        eventSource.on(evt, () => refreshToggleTabIfVisible());
+    }
 }
 
 // ===== handler ของ settings.html / panel.html (delegated ทั้งหมด) =====
@@ -367,6 +491,112 @@ function bindUiHandlers() {
         updatePromptWarning(id, PROMPT_DEFS[id].default);
         applyInjections(getContext());
         toastr.success("คืนค่าเริ่มต้นแล้ว", "Tiramisu Kit");
+    });
+
+    // ===== ชุด Toggle =====
+    $(document).on("click", ".tirakit-set-detail-btn", function () {
+        $(this).closest(".tirakit-set-card").find(".tirakit-set-detail").toggleClass("tirakit-hidden");
+    });
+
+    $(document).on("click", ".tirakit-set-apply-btn", function () {
+        const $card = $(this).closest(".tirakit-set-card");
+        const set = findSetByCard($card);
+        if (!set) return;
+        if ($card.hasClass("tirakit-set-mismatch")) {
+            const ok = confirm(`ชุด "${set.label}" บันทึกไว้จากพรีเซ็ต "${set.presetName}" ซึ่งไม่ตรงกับพรีเซ็ตปัจจุบัน ต้องการใช้ต่อไหม?`);
+            if (!ok) return;
+        }
+        const res = applySet(set);
+        if (!res.ok) {
+            toastr.error(
+                res.reason === "no-prompt-manager" ? "ใช้ได้เฉพาะ API แบบ Chat Completion" : "ใช้ชุดนี้ไม่สำเร็จ (ดู console)",
+                "Tiramisu Kit",
+            );
+            return;
+        }
+        let msg = `เปิด ${res.turnedOn} · ปิด ${res.turnedOff}`;
+        if (res.skipped.length) msg += ` · ข้าม ${res.skipped.length} (ไม่พบในพรีเซ็ตนี้)`;
+        toastr.success(msg, `ใช้ชุด "${set.label}" แล้ว`);
+    });
+
+    $(document).on("click", ".tirakit-set-overwrite-btn", function () {
+        const $card = $(this).closest(".tirakit-set-card");
+        const set = findSetByCard($card);
+        if (!set) return;
+        if (!confirm(`เขียนทับชุด "${set.label}" ด้วยสถานะ toggle ปัจจุบันหรือไม่?`)) return;
+        const picks = snapshotCurrentPicks();
+        if (!Object.keys(picks).length) {
+            toastr.warning("ยังไม่มีตัวเลือกในกลุ่มสไตล์ที่เปิดอยู่เลย — ไม่ได้เขียนทับ", "Tiramisu Kit");
+            return;
+        }
+        const s = getSettings();
+        const idx = s.toggleSets.findIndex((x) => x.id === set.id);
+        if (idx === -1) return;
+        s.toggleSets[idx] = { ...s.toggleSets[idx], picks, presetName: getCurrentPresetName(getContext()) || s.toggleSets[idx].presetName };
+        setSetting("toggleSets", s.toggleSets);
+        renderToggleTab();
+        toastr.success(`เขียนทับชุด "${set.label}" แล้ว`, "Tiramisu Kit");
+    });
+
+    $(document).on("click", ".tirakit-set-delete-btn", function () {
+        const $card = $(this).closest(".tirakit-set-card");
+        const set = findSetByCard($card);
+        if (!set) return;
+        if (!confirm(`ลบชุด "${set.label}" ?`)) return;
+        const s = getSettings();
+        s.toggleSets = s.toggleSets.filter((x) => x.id !== set.id);
+        setSetting("toggleSets", s.toggleSets);
+        renderToggleTab();
+    });
+
+    $(document).on("click", "#tirakit-toggle-save-new", function () {
+        if ($("#tirakit-toggle-newset-form").length) return;
+        $(this).before(`
+            <div id="tirakit-toggle-newset-form" class="tirakit-inline-form">
+                <input type="text" id="tirakit-toggle-newset-name" class="text_pole" placeholder="ตั้งชื่อชุด" maxlength="60" />
+                <button class="menu_button tirakit-btn-sm" id="tirakit-toggle-newset-confirm">บันทึก</button>
+                <button class="menu_button tirakit-btn-sm" id="tirakit-toggle-newset-cancel">ยกเลิก</button>
+            </div>`);
+        $("#tirakit-toggle-newset-name").trigger("focus");
+    });
+    $(document).on("click", "#tirakit-toggle-newset-cancel", function () {
+        $("#tirakit-toggle-newset-form").remove();
+    });
+    $(document).on("click", "#tirakit-toggle-newset-confirm", function () {
+        const label = $("#tirakit-toggle-newset-name").val().trim();
+        if (!label) {
+            toastr.warning("ใส่ชื่อชุดก่อน", "Tiramisu Kit");
+            return;
+        }
+        const picks = snapshotCurrentPicks();
+        if (!Object.keys(picks).length) {
+            toastr.warning("ยังไม่มีตัวเลือกในกลุ่มสไตล์ที่เปิดอยู่เลย", "Tiramisu Kit");
+            return;
+        }
+        const s = getSettings();
+        s.toggleSets.push({
+            id: `mine-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            label,
+            desc: "",
+            builtin: false,
+            presetName: getCurrentPresetName(getContext()) || null,
+            picks,
+        });
+        setSetting("toggleSets", s.toggleSets);
+        $("#tirakit-toggle-newset-form").remove();
+        renderToggleTab();
+        toastr.success(`บันทึกชุด "${label}" แล้ว`, "Tiramisu Kit");
+    });
+
+    $(document).on("change", 'input[name="tirakit-thinkbox"]', function () {
+        const target = $(this).val();
+        const res = setThinkBoxState(target);
+        if (!res.ok) {
+            toastr.error("สลับ Think Box ไม่สำเร็จ", "Tiramisu Kit");
+            return;
+        }
+        updateThinkBoxWarn();
+        toastr.success(target === "with" ? "เปิด Think Box แล้ว" : "ปิด Think Box แล้ว", "Tiramisu Kit");
     });
 
     // ===== โทเคน =====

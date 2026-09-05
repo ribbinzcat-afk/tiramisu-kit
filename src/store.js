@@ -47,6 +47,14 @@ export const defaultSettings = {
 
     // prompt ที่ผู้ใช้แก้เอง (เติมจาก PROMPT_DEFS ตอนอ่าน) — key = promptId
     prompts: {},
+
+    // ชุด Toggle ที่ผู้ใช้บันทึกเอง (global — ตามผู้ใช้ไปทุกแชท) รูปแบบเดียวกับ BUILTIN_SETS ใน toggle-sets.js
+    // แต่ละตัว: { id, label, desc, builtin:false, presetName, picks: {กลุ่ม: ชื่อสมาชิก} }
+    toggleSets: [],
+
+    // ค่า Think Box ของพรีเซ็ต Tiramisu ที่ extension แก้ให้ล่าสุด — ใช้แค่โชว์สถานะในแท็บ ไม่ใช่ source of truth
+    // (source of truth จริงคือ prompt_order ของพรีเซ็ต) เก็บไว้กันจอกระพริบตอนโหลดแท็บก่อน parse เสร็จ
+    lastThinkBoxState: null, // null | "with" | "without"
 };
 
 export function getSettings() {
@@ -63,6 +71,7 @@ export function getSettings() {
         if (!s.injectPos[g] || typeof s.injectPos[g] !== "object") s.injectPos[g] = structuredClone(defaultSettings.injectPos[g]);
     }
     if (!s.prompts || typeof s.prompts !== "object") s.prompts = {};
+    if (!Array.isArray(s.toggleSets)) s.toggleSets = [];
     return s;
 }
 

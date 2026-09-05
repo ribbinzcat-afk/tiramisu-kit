@@ -4,6 +4,15 @@
    โดยตรง เพราะเป็นดีไซน์ "ในโลกของเรื่อง" ตั้งใจไม่ตามธีมผู้ใช้ เหมือน regex script ต้นฉบับ — ไม่มี CSS ของกล่อง
    พวกนี้อยู่ในไฟล์นี้) */
 
+/* ST's own .menu_button ตั้ง width: min-content ไว้ (เผื่อไอคอนล้วนในเมนูอื่น) — สำหรับปุ่มมีข้อความของเรา
+   ค่านี้ทำให้ตัวอักษรตัดคำแคบสุดเท่าที่เป็นไปได้ (โดยเฉพาะภาษาไทยที่ไม่มีช่องว่างคั่นคำ จะตัดจนเหลือบรรทัดละ
+   ไม่กี่ตัวอักษร) ต้อง override เป็น auto + ห้ามตัดบรรทัดใน tirakit เท่านั้น (ไม่แตะ .menu_button ที่อื่นของ ST) */
+.tirakit-settings .menu_button,
+.tirakit-panel .menu_button {
+    width: auto;
+    white-space: nowrap;
+}
+
 .tirakit-hint {
     display: block;
     opacity: 0.75;
@@ -215,4 +224,156 @@
         height: 100dvh;
         border-radius: 0;
     }
+}
+
+/* ===== สถานะ "กำลังเจน..." (โหมด split) ===== */
+.tirakit-status {
+    /* px offset จากขอบจอโดยตรง (ไม่ใช้ inset/%) — ปลอดภัยจาก transform บน <html> ที่ ST ใช้จัดการซูมมือถือ */
+    position: fixed;
+    right: 14px;
+    bottom: 78px;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--SmartThemeBlurTintColor, #1e1e1e);
+    color: var(--SmartThemeBodyColor, #eee);
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 0.8em;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    max-width: min(320px, 80vw);
+}
+.tirakit-status.tirakit-hidden {
+    display: none !important;
+}
+.tirakit-status-spinner {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    animation: tirakit-spin 0.7s linear infinite;
+}
+@keyframes tirakit-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== แท็บชุด Toggle ===== */
+.tirakit-preset-info {
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 10px;
+    font-size: 0.9em;
+}
+.tirakit-badge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--SmartThemeQuoteColor, #6ab0f3);
+    color: var(--SmartThemeBlurTintColor, #1e1e1e);
+    font-size: 0.8em;
+    font-weight: 600;
+}
+.tirakit-hint-inline {
+    margin-top: 4px;
+    opacity: 0.75;
+    font-size: 0.85em;
+}
+#tirakit-thinkbox-section.tirakit-hidden {
+    display: none !important;
+}
+.tirakit-thinkbox-warn {
+    margin: 8px 0;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: color-mix(in srgb, #e07b39 20%, transparent);
+    border: 1px solid #e07b39;
+    font-size: 0.85em;
+}
+.tirakit-thinkbox-warn.tirakit-hidden {
+    display: none !important;
+}
+
+.tirakit-set-card {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 10px;
+}
+.tirakit-set-card.tirakit-set-mismatch {
+    opacity: 0.6;
+}
+.tirakit-set-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+.tirakit-set-headtext {
+    flex: 1 1 180px;
+    min-width: 0;
+}
+.tirakit-set-label {
+    font-weight: 600;
+}
+.tirakit-set-desc {
+    font-size: 0.82em;
+    opacity: 0.8;
+    margin-top: 2px;
+}
+.tirakit-set-preset {
+    font-size: 0.75em;
+    opacity: 0.65;
+    margin-top: 2px;
+}
+.tirakit-set-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.tirakit-btn-sm {
+    padding: 4px 10px !important;
+    font-size: 0.8em !important;
+    min-height: 32px;
+}
+.tirakit-btn-primary {
+    border-color: var(--SmartThemeQuoteColor, #6ab0f3) !important;
+}
+
+.tirakit-set-detail {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--SmartThemeBorderColor, #444);
+}
+.tirakit-set-detail.tirakit-hidden {
+    display: none !important;
+}
+.tirakit-set-pick-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.82em;
+    padding: 2px 0;
+    opacity: 0.9;
+}
+.tirakit-set-pick-row.tirakit-set-pick-missing {
+    color: #e07b39;
+    opacity: 1;
+}
+
+.tirakit-inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.tirakit-inline-form input[type="text"] {
+    flex: 1 1 160px;
 }

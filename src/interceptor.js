@@ -16,6 +16,7 @@ import { extensionName, getSettings } from "./store.js";
 import { tirakitGenerate, recordTokens, stripReasoning } from "./api.js";
 import { buildPrompt } from "./prompts.js";
 import { buildCotContext } from "./context.js";
+import { withStatus } from "./status.js";
 
 let pendingCot = null; // { text, ms } — ผลลัพธ์ CoT รอบล่าสุดที่ยังไม่ได้แปะเข้า mes
 
@@ -57,7 +58,7 @@ export async function tiramisuKitInterceptor(chat, contextSize, abort, type) {
             await recordTokens(ctx, "cot", { instruction, context }, maxTokens);
 
             const t0 = Date.now();
-            const raw = await tirakitGenerate(ctx, "cot", prompt, maxTokens);
+            const raw = await withStatus("CoT", () => tirakitGenerate(ctx, "cot", prompt, maxTokens));
             const stripped = stripReasoning(raw).trim();
             if (stripped) {
                 // เผื่อโมเดลเจนแนบ <planning> มาเองด้วย (ทำตามเทมเพลตที่ขอ) — ดึงเฉพาะเนื้อในเพื่อไปห่อเองอีกที

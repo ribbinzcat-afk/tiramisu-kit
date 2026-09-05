@@ -8,6 +8,7 @@
         <div class="tirakit-tabs">
             <div class="tirakit-tab tirakit-tab-active" data-tirakit-tab="modules">โมดูล</div>
             <div class="tirakit-tab" data-tirakit-tab="cot">CoT</div>
+            <div class="tirakit-tab" data-tirakit-tab="toggles">ชุด Toggle</div>
             <div class="tirakit-tab" data-tirakit-tab="prompts">แก้ Prompt</div>
             <div class="tirakit-tab" data-tirakit-tab="tokens">โทเคน</div>
         </div>
@@ -113,6 +114,35 @@
                     <span class="tirakit-field-label">จำนวนข้อความล่าสุดที่ส่งเป็นบริบท (เฉพาะโหมดแยก)</span>
                     <input id="tirakit-cot-ctxmsgs" type="number" min="1" max="30" class="text_pole" />
                 </label>
+            </div>
+
+            <!-- ===== แท็บชุด Toggle ===== -->
+            <div class="tirakit-tabpane tirakit-hidden" data-tirakit-pane="toggles">
+                <div id="tirakit-toggle-preset-info" class="tirakit-preset-info"></div>
+
+                <div id="tirakit-thinkbox-section" class="tirakit-group tirakit-hidden">
+                    <div class="tirakit-group-title">🧠 Think Box ของพรีเซ็ต</div>
+                    <small class="tirakit-hint">สลับระหว่างสองกลุ่ม "มี Think Box" / "ไม่มี Think Box" ที่มากับพรีเซ็ตนี้โดยตรง (คนละตัวกับโมดูล CoT ของ Tiramisu Kit)</small>
+                    <div id="tirakit-thinkbox-warn" class="tirakit-thinkbox-warn tirakit-hidden">⚠️ กำลังเปิดทั้ง Think Box ของพรีเซ็ต และโมดูล CoT ของ Tiramisu Kit พร้อมกัน — เนื้อหาซ้ำซ้อนกันได้</div>
+                    <div class="tirakit-inject-row">
+                        <label><input type="radio" name="tirakit-thinkbox" value="without" /> ไม่มี Think Box</label>
+                        <label><input type="radio" name="tirakit-thinkbox" value="with" /> มี Think Box</label>
+                    </div>
+                </div>
+
+                <div class="tirakit-group">
+                    <div class="tirakit-group-title">🍰 ชุดสำเร็จรูป</div>
+                    <small class="tirakit-hint">แตะเฉพาะกลุ่มสไตล์ (Style / Writing Voice / Narrative Focus / POV / Pacing / Emotional Intensity / Dialogue Density / User Agency / Length) — ไม่แตะภาษา, NSFW, หรือโครงสร้างพรีเซ็ต</small>
+                    <div id="tirakit-toggle-builtin-list"></div>
+                </div>
+
+                <div class="tirakit-group">
+                    <div class="tirakit-group-title">⭐ ชุดของฉัน</div>
+                    <div id="tirakit-toggle-mine-list"></div>
+                    <button id="tirakit-toggle-save-new" class="menu_button">
+                        <i class="fa-solid fa-floppy-disk"></i> บันทึกสถานะ toggle ปัจจุบันเป็นชุดใหม่
+                    </button>
+                </div>
             </div>
 
             <!-- ===== แท็บแก้ Prompt ===== -->
