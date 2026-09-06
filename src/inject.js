@@ -6,43 +6,46 @@
 import { MODULE_GROUPS, modulesInGroup } from "./modules.js";
 import { buildPrompt } from "./prompts.js";
 import { getSettings } from "./store.js";
+import { getCurrentPresetName, detectVariant } from "./preset.js";
 
 const KEY_PREFIX = "tirakit_";
 // โหมด split จัดการกลุ่มพวกนี้เอง (CoT เจนก่อนใน interceptor, Theatre/Tiramisu UI เจนตามหลังใน post.js)
 const SPLIT_MANAGED_GROUPS = new Set(["cot", "theatre", "tiramisuUi"]);
 
-function buildGroupText(groupId, settings) {
+// variant: ผลจาก detectVariant() ("nc" | "sfw" | null) — ตอนนี้มีผลแค่กับ "cot" (ดู PROMPT_DEFS.cot.variants
+// ใน prompts.js) ส่งให้ทุก buildPrompt() ไว้เผื่ออนาคตมีโมดูลอื่นที่ต้องผูกกับเวอร์ชันพรีเซ็ตด้วย
+function buildGroupText(groupId, settings, variant) {
     const mods = modulesInGroup(groupId);
 
     if (groupId === "ui") {
         const mod = mods.find((m) => m.id === settings.selectedUi);
         if (!mod) return "";
-        return buildPrompt(mod.promptId, { custom: settings.uiCustomText }, settings.prompts);
+        return buildPrompt(mod.promptId, { custom: settings.uiCustomText }, settings.prompts, variant);
     }
 
     if (groupId === "dialogue") {
         const mod = mods.find((m) => m.id === settings.selectedDialogue);
         if (!mod) return "";
-        return buildPrompt(mod.promptId, {}, settings.prompts);
+        return buildPrompt(mod.promptId, {}, settings.prompts, variant);
     }
 
     if (groupId === "rng") {
         if (!settings.rngEnabled) return "";
-        return buildPrompt("rng", {}, settings.prompts);
+        return buildPrompt("rng", {}, settings.prompts, variant);
     }
 
     if (groupId === "tiramisuUi") {
-        const parts = mods.filter((m) => settings.tiramisuUi?.[m.id]).map((m) => buildPrompt(m.promptId, {}, settings.prompts));
+        const parts = mods.filter((m) => settings.tiramisuUi?.[m.id]).map((m) => buildPrompt(m.promptId, {}, settings.prompts, variant));
         return parts.join("\n\n");
     }
 
     if (groupId === "theatre") {
         // artDirection เป็นฐาน — ไม่เปิดฐาน ตัวย่อยไม่มีความหมาย (การ์ดหน้าตั้งค่าก็ disable ตัวย่อยไว้เมื่อฐานปิด)
         if (!settings.theatre?.artDirection) return "";
-        const parts = [buildPrompt("theatreArtDirection", {}, settings.prompts)];
+        const parts = [buildPrompt("theatreArtDirection", {}, settings.prompts, variant)];
         for (const m of mods) {
             if (m.id !== "artDirection" && settings.theatre?.[m.id]) {
-                parts.push(buildPrompt(m.promptId, {}, settings.prompts));
+                parts.push(buildPrompt(m.promptId, {}, settings.prompts, variant));
             }
         }
         return parts.join("\n\n");
@@ -50,7 +53,7 @@ function buildGroupText(groupId, settings) {
 
     if (groupId === "cot") {
         if (!settings.cotEnabled) return "";
-        return buildPrompt("cot", {}, settings.prompts);
+        return buildPrompt("cot", {}, settings.prompts, variant);
     }
 
     return "";
@@ -64,6 +67,7 @@ function clearGroupPrompt(ctx, groupId) {
 // กลุ่มที่เจนแยก (genMode split + splittable) ไม่ถูกแทรกที่นี่ (interceptor.js / post.js จัดการเอง)
 export function applyInjections(ctx) {
     const settings = getSettings();
+    const variant = detectVariant(getCurrentPresetName(ctx));
     for (const group of MODULE_GROUPS) {
         if (!settings.enabled) {
             clearGroupPrompt(ctx, group.id);
@@ -73,7 +77,7 @@ export function applyInjections(ctx) {
             clearGroupPrompt(ctx, group.id);
             continue;
         }
-        const text = buildGroupText(group.id, settings);
+        const text = buildGroupText(group.id, settings, variant);
         if (!text) {
             clearGroupPrompt(ctx, group.id);
             continue;

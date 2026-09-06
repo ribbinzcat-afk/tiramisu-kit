@@ -17,6 +17,7 @@ import { tirakitGenerate, recordTokens, stripReasoning } from "./api.js";
 import { buildPrompt } from "./prompts.js";
 import { buildCotContext } from "./context.js";
 import { withStatus } from "./status.js";
+import { getCurrentPresetName, detectVariant } from "./preset.js";
 
 let pendingCot = null; // { text, ms } — ผลลัพธ์ CoT รอบล่าสุดที่ยังไม่ได้แปะเข้า mes
 
@@ -51,8 +52,9 @@ export async function tiramisuKitInterceptor(chat, contextSize, abort, type) {
 
         if (settings.genMode === "split" && settings.cotEnabled && type !== "quiet") {
             const ctx = SillyTavern.getContext();
+            const variant = detectVariant(getCurrentPresetName(ctx));
             const context = buildCotContext(ctx, settings.cotContextMessages || 6);
-            const instruction = buildPrompt("cot", {}, settings.prompts);
+            const instruction = buildPrompt("cot", {}, settings.prompts, variant);
             const prompt = ctx.substituteParams(`${instruction}\n\n${context}`);
             const maxTokens = 700;
             await recordTokens(ctx, "cot", { instruction, context }, maxTokens);

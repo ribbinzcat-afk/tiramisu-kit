@@ -222,6 +222,10 @@ Mini Theatre (UI โรงละครจิ๋วตามธีม) : Art Dire
     cot: {
         label: "Chain of Thought (CoT)",
         tokens: [],
+        // ค่าเริ่มต้นผูกกับเวอร์ชันพรีเซ็ต Tiramisu ที่ตรวจเจอ (sfw/nc มีบางประโยคต่างกัน เช่น sfw ไม่มี
+        // {{getvar::explicitness}} และมี writing_voice น้อยกว่า) — ดู getEffectiveDefault()/buildPrompt()
+        // ด้านล่าง ที่ interceptor.js/inject.js/index.js เรียกโดยส่ง variant จาก preset.js เข้ามา
+        // ถ้าตรวจไม่ได้ว่าเป็นพรีเซ็ตเวอร์ชันไหน (ไม่ใช่พรีเซ็ต Tiramisu) ใช้ default (เนื้อหา nc) เป็นค่าตั้งต้น
         default: `# Chain of Thought
 - แสดงผลขั้นตอนการคิดทั้งหมดเอาไว้ภายใน tag <planning> ทุกครั้งก่อนเขียนคำตอบจริงเสมอ
 - แสดงผลกระบวนการความคิดให้ครบถ้วนก่อนเริ่มต้นคำตอบ
@@ -283,14 +287,150 @@ Mini Theatre (UI โรงละครจิ๋วตามธีม) : Art Dire
 『 ☕ @ ทั้งหมดพร้อมแล้ว เริ่มต้นการทำขนมได้เลย 』
 
 </planning>`,
+        variants: {
+            nc: `# Chain of Thought
+- แสดงผลขั้นตอนการคิดทั้งหมดเอาไว้ภายใน tag <planning> ทุกครั้งก่อนเขียนคำตอบจริงเสมอ
+- แสดงผลกระบวนการความคิดให้ครบถ้วนก่อนเริ่มต้นคำตอบ
+- เขียน treatment ด้วยการวางโครงเรื่องแบบผู้กำกับ ไม่ต้องบรรยายละเอียด แต่ใส่ให้ครบว่าแต่ละย่อหน้ามีเหตุการณ์อะไร
+
+<planning>
+
+『 🍰 @ ห้องครัวขนมหวานของทิรามิสุ 』
+(หมายเหตุภายใน: "ห้องครัว / วัตถุดิบ" คือคำเปรียบเทียบของขั้นตอนคิดเท่านั้น ฉากและตัวละครจริงให้ยึดตาม Scenario/การ์ด)
+
+※ เหตุการณ์ปัจจุบัน
+* Past session story: []
+* Recent Story: []
+* Reply ล่าสุด: []
+
+※ โลกและกฏของโลก
+* Setting: [ยุคสมัย, เมือง, พื้นหลัง]
+* การสร้าง Character: [วัฒนธรรม, การใช้ภาษาของตัวละครที่อยู่อาศัยในโลกนี้]
+* World Logic: [ตรรกะของโลกที่ระบุเอาไว้]
+* World Rules: [กฏที่โลกนี้มีเป็นเงื่อนไข]
+
+※ ฉากและสภาพแวดล้อม
+* Background: [สถานที่ปัจจุบัน]
+* สภาพแวดล้อมและรายละเอียดทางประสาทสัมผัส: [บรรยากาศ, กลิ่น, ความสะอาด ฯลฯ]
+
+※ ตัวละครในเนื้อเรื่อง ({{char}} และ NPC — ไม่ใช่ทิรามิสุผู้ช่วย)
+* วจนะภาษา (สิ่งที่ตัวละครจะแสดงออกทางคำพูด): []
+* อวจนะภาษา (สิ่งที่ตัวละครแสดงออกผ่านปฏิกิริยา): []
+* สร้างทางเลือกที่เป็นไปได้และเหมาะกับบุคลิกของตัวละคร: []
+* เลือกการกระทำต่อไปของตัวเอง: []
+* การเปิดช่องให้ {{user}}: []
+
+『 🍰 @ สำนวนภาษา 』
+* สไตล์การบรรยาย: {{getvar::style}}
+* โฟกัสของเนื้อเรื่อง: {{getvar::narrative_focus}}
+* มุมมอง: {{getvar::narrative_pov}} {{getvar::pov_flex}}
+* ความเร็วของเนื้อเรื่อง: {{getvar::pacing}}
+* ระดับอารมณ์: {{getvar::emotional_intensity}}
+* ระดับความโจ่งแจ้ง: {{getvar::explicitness}}
+* ปริมาณบท: {{getvar::dialogue_density}}
+* User Agency: []
+
+『 🍰 @ การจัดรูปแบบ 』
+* ความยาวเป้าหมาย: {{getvar::length}}
+* จำนวนย่อหน้าคร่าวๆ: []
+* น้ำเสียง / สำนวน: {{getvar::writing_voice_1}} {{getvar::writing_voice_2}} {{getvar::writing_voice_3}} {{getvar::writing_voice_4}} {{getvar::writing_voice_5}} {{getvar::writing_voice_6}} {{getvar::writing_voice_7}} {{getvar::writing_voice_8}} {{getvar::writing_voice_9}} {{getvar::writing_voice_10}} {{getvar::writing_voice_11}} {{getvar::writing_voice_12}} {{getvar::writing_voice_13}} {{getvar::writing_voice_14}} {{getvar::writing_voice_15}} {{getvar::writing_voice_16}} {{getvar::writing_voice_17}} {{getvar::writing_voice_18}}
+{{getvar::mobile_format}}
+* การจัดย่อหน้าที่เหมาะกับสำนวน (ต้องเพิ่มหรือลดย่อหน้า/ปรับคำบรรยายให้เหมาะกับสำนวนอย่างไร): []
+
+『 🍰 @ วางโครงของคำตอบ 』
+* Output Language: {{getvar::language}}
+* Outline คำตอบ (เป็น Bullet):
+* Treatment เจาะลึก (ขยาย Outline วางแผนว่าแต่ละย่อหน้าจะใส่อะไร):
+   * P1 (ย่อมาจาก Paragraph 1): []
+   * P2: []
+   * P3: []
+   * (ทำซ้ำการเขียนรายละเอียดของแต่ละ Paragraph ไปเรื่อยๆ จนครบตาม Outline, เขียนมากกว่าจำนวนย่อหน้าเป้าหมายได้)
+
+『 ☕ @ ทั้งหมดพร้อมแล้ว เริ่มต้นการทำขนมได้เลย 』
+
+</planning>`,
+            sfw: `# Chain of Thought
+- แสดงผลขั้นตอนการคิดทั้งหมดเอาไว้ภายใน tag <planning> ทุกครั้งก่อนเขียนคำตอบจริงเสมอ
+- แสดงผลกระบวนการความคิดให้ครบถ้วนก่อนเริ่มต้นคำตอบ
+- เขียน treatment ด้วยการวางโครงเรื่องแบบผู้กำกับ ไม่ต้องบรรยายละเอียด แต่ใส่ให้ครบว่าแต่ละย่อหน้ามีเหตุการณ์อะไร
+
+<planning>
+
+『 🍰 @ ห้องครัวขนมหวานของทิรามิสุ 』
+(หมายเหตุภายใน: "ห้องครัว / วัตถุดิบ" คือคำเปรียบเทียบของขั้นตอนคิดเท่านั้น ฉากและตัวละครจริงให้ยึดตาม Scenario/การ์ด)
+
+※ เหตุการณ์ปัจจุบัน
+* Past session story: []
+* Recent Story: []
+* Reply ล่าสุด: []
+
+※ โลกและกฏของโลก
+* Setting: [ยุคสมัย, เมือง, พื้นหลัง]
+* การสร้าง Character: [วัฒนธรรม, การใช้ภาษาของตัวละครที่อยู่อาศัยในโลกนี้]
+* World Logic: [ตรรกะของโลกที่ระบุเอาไว้]
+* World Rules: [กฏที่โลกนี้มีเป็นเงื่อนไข]
+
+※ ฉากและสภาพแวดล้อม
+* Background: [สถานที่ปัจจุบัน]
+* สภาพแวดล้อมและรายละเอียดทางประสาทสัมผัส: [บรรยากาศ, กลิ่น, ความสะอาด ฯลฯ]
+
+※ ตัวละครในเนื้อเรื่อง ({{char}} และ NPC — ไม่ใช่ทิรามิสุผู้ช่วย)
+* วจนะภาษา (สิ่งที่ตัวละครจะแสดงออกทางคำพูด): []
+* อวจนะภาษา (สิ่งที่ตัวละครแสดงออกผ่านปฏิกิริยา): []
+* สร้างทางเลือกที่เป็นไปได้และเหมาะกับบุคลิกของตัวละคร: []
+* เลือกการกระทำต่อไปของตัวเอง: []
+* การเปิดช่องให้ {{user}}: []
+
+『 ☕ @ การเตรียมการพร้อมแล้ว เริ่มต้นการเขียน Outline 』
+
+『 🍰 @ สำนวนภาษา 』
+* สไตล์การบรรยาย: {{getvar::style}}
+* โฟกัสของเนื้อเรื่อง: {{getvar::narrative_focus}}
+* มุมมอง: {{getvar::narrative_pov}} {{getvar::pov_flex}}
+* ความเร็วของเนื้อเรื่อง: {{getvar::pacing}}
+* ระดับอารมณ์: {{getvar::emotional_intensity}}
+* ปริมาณบท: {{getvar::dialogue_density}}
+* User Agency: []
+
+『 🍰 @ การจัดรูปแบบ 』
+* ความยาวเป้าหมาย: {{getvar::length}}
+* จำนวนย่อหน้าคร่าวๆ: []
+* น้ำเสียง / สำนวน: {{getvar::writing_voice_1}} {{getvar::writing_voice_2}} {{getvar::writing_voice_3}} {{getvar::writing_voice_4}} {{getvar::writing_voice_5}} {{getvar::writing_voice_6}} {{getvar::writing_voice_7}} {{getvar::writing_voice_8}} {{getvar::writing_voice_9}} {{getvar::writing_voice_10}} {{getvar::writing_voice_11}} {{getvar::writing_voice_12}} {{getvar::writing_voice_13}} {{getvar::writing_voice_14}} {{getvar::writing_voice_15}} {{getvar::writing_voice_16}}
+{{getvar::mobile_format}}
+* การจัดย่อหน้าที่เหมาะกับสำนวน (ต้องเพิ่มหรือลดย่อหน้า/ปรับคำบรรยายให้เหมาะกับสำนวนอย่างไร): []
+
+『 🍰 @ วางโครงของคำตอบ 』
+* Output Language: {{getvar::language}}
+* Outline คำตอบ (เป็น Bullet):
+* Treatment เจาะลึก (ขยาย Outline วางแผนว่าแต่ละย่อหน้าจะใส่อะไร):
+   * P1 (ย่อมาจาก Paragraph 1): []
+   * P2: []
+   * P3: []
+   * (ทำซ้ำการเขียนรายละเอียดของแต่ละ Paragraph ไปเรื่อยๆ จนครบตาม Outline, เขียนมากกว่าจำนวนย่อหน้าเป้าหมายได้)
+
+『 ☕ @ ทั้งหมดพร้อมแล้ว เริ่มต้นการทำขนมได้เลย 』
+
+</planning>`,
+        },
     },
 };
 
 // แทนที่ {{token}} ของ extension เอง (คนละชุดกับ macro ของ ST) แล้วคืน string พร้อมส่งต่อให้ ctx.substituteParams()
-export function buildPrompt(id, vars, stored) {
+// ค่าเริ่มต้นของ prompt หนึ่งตัว ตามเวอร์ชันพรีเซ็ตที่ตรวจเจอ (variant: "nc" | "sfw" | null)
+// ไม่มี variants สำหรับ id นั้น หรือ variant ไม่ตรงกับที่มี (เช่นไม่ใช่พรีเซ็ต Tiramisu) → ใช้ def.default
+export function getEffectiveDefault(id, variant) {
     const def = PROMPT_DEFS[id];
     if (!def) return "";
-    let out = stored && typeof stored[id] === "string" && stored[id] ? stored[id] : def.default;
+    if (variant && def.variants && typeof def.variants[variant] === "string") return def.variants[variant];
+    return def.default;
+}
+
+// variant: ผลจาก preset.js::detectVariant() ("nc" | "sfw" | null) — ผู้ใช้แก้เองแล้ว (stored[id]) ชนะเสมอ
+// ไม่ว่า variant จะเป็นอะไร (ผู้ใช้ตั้งใจ override แล้ว ไม่ควรไปสลับให้ตามพรีเซ็ตอีก)
+export function buildPrompt(id, vars, stored, variant) {
+    const def = PROMPT_DEFS[id];
+    if (!def) return "";
+    let out = stored && typeof stored[id] === "string" && stored[id] ? stored[id] : getEffectiveDefault(id, variant);
     for (const [k, v] of Object.entries(vars || {})) {
         out = out.split(`{{${k}}}`).join(String(v ?? ""));
     }

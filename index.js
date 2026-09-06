@@ -6,7 +6,7 @@
 import { getContext } from "../../../extensions.js";
 import { extensionName, extensionFolderPath, getSettings, getSetting, setSetting } from "./src/store.js";
 import { MODULE_GROUPS } from "./src/modules.js";
-import { PROMPT_DEFS, validatePromptTemplate } from "./src/prompts.js";
+import { PROMPT_DEFS, validatePromptTemplate, getEffectiveDefault } from "./src/prompts.js";
 import { listConnectionProfiles, lastCalls } from "./src/api.js";
 import { applyInjections, clearAllInjections } from "./src/inject.js";
 import { tiramisuKitInterceptor, takePendingCot } from "./src/interceptor.js";
@@ -60,6 +60,14 @@ function switchPanelTab(tab) {
 function refreshToggleTabIfVisible() {
     if (!$('.tirakit-tabpane[data-tirakit-pane="toggles"]').hasClass("tirakit-hidden")) {
         renderToggleTab();
+    }
+}
+
+// เรียกตอนพรีเซ็ตเปลี่ยน — รีเฟรชแท็บ "แก้ Prompt" ถ้าเปิดค้างอยู่ (ค่าเริ่มต้นของ CoT ผูกกับเวอร์ชันพรีเซ็ต
+// — สลับพรีเซ็ตแล้วค่าเริ่มต้นที่โชว์ต้องเปลี่ยนตาม ไม่กระทบ prompt ที่ผู้ใช้แก้เอง)
+function refreshPromptTabIfVisible() {
+    if (!$('.tirakit-tabpane[data-tirakit-pane="prompts"]').hasClass("tirakit-hidden")) {
+        renderPromptList();
     }
 }
 
@@ -154,15 +162,19 @@ function updateTheatreSubState() {
 // ===== แท็บแก้ Prompt =====
 function renderPromptList() {
     const s = getSettings();
+    const variant = detectVariant(getCurrentPresetName(getContext()));
     const $list = $("#tirakit-prompt-list");
     let html = "";
     for (const [id, def] of Object.entries(PROMPT_DEFS)) {
         const stored = s.prompts?.[id];
-        const value = typeof stored === "string" && stored ? stored : def.default;
+        const value = typeof stored === "string" && stored ? stored : getEffectiveDefault(id, variant);
+        const variantTag = def.variants && variant
+            ? ` <small class="tirakit-prompt-variant-tag">(ค่าเริ่มต้นตามพรีเซ็ต: ${variant.toUpperCase()})</small>`
+            : "";
         html += `
         <div class="inline-drawer tirakit-prompt-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <b>${escapeText(def.label)}</b>
+                <span><b>${escapeText(def.label)}</b>${variantTag}</span>
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
             <div class="inline-drawer-content">
@@ -221,10 +233,25 @@ function renderSetCard(set, isMine, currentPresetName, groupDetails) {
             <div class="tirakit-set-actions">
                 <button class="menu_button tirakit-btn-sm tirakit-set-detail-btn">รายละเอียด</button>
                 <button class="menu_button tirakit-btn-sm tirakit-btn-primary tirakit-set-apply-btn">ใช้ชุดนี้</button>
-                ${isMine ? `<button class="menu_button tirakit-btn-sm tirakit-set-overwrite-btn">เขียนทับ</button><button class="menu_button tirakit-btn-sm tirakit-set-delete-btn">ลบ</button>` : ""}
+                ${isMine ? `<button class="menu_button tirakit-btn-sm tirakit-set-edit-btn">แก้ไข</button><button class="menu_button tirakit-btn-sm tirakit-set-overwrite-btn">เขียนทับ</button><button class="menu_button tirakit-btn-sm tirakit-set-delete-btn">ลบ</button>` : ""}
             </div>
         </div>
         <div class="tirakit-set-detail tirakit-hidden">${rows}</div>
+        ${isMine ? `
+        <div class="tirakit-set-edit-form tirakit-hidden">
+            <label class="tirakit-field">
+                <span class="tirakit-field-label">ชื่อ</span>
+                <input type="text" class="text_pole tirakit-set-edit-name" value="${escapeAttr(set.label)}" maxlength="60" />
+            </label>
+            <label class="tirakit-field">
+                <span class="tirakit-field-label">คำอธิบาย</span>
+                <textarea class="text_pole tirakit-set-edit-desc" rows="2">${escapeText(set.desc || "")}</textarea>
+            </label>
+            <div class="tirakit-set-actions">
+                <button class="menu_button tirakit-btn-sm tirakit-btn-primary tirakit-set-edit-save-btn">บันทึก</button>
+                <button class="menu_button tirakit-btn-sm tirakit-set-edit-cancel-btn">ยกเลิก</button>
+            </div>
+        </div>` : ""}
     </div>`;
 }
 
@@ -360,11 +387,16 @@ function bindChatEvents(ctx) {
         handleMessageReceived(ctx, mesId, type).catch((e) => console.error(`[${extensionName}] handleMessageReceived ล้มเหลว:`, e));
     });
 
-    // พรีเซ็ต Chat Completion เปลี่ยน (สลับพรีเซ็ต/นำเข้าใหม่) — รีเฟรชแท็บ "ชุด Toggle" ถ้าเปิดค้างอยู่
+    // พรีเซ็ต Chat Completion เปลี่ยน (สลับพรีเซ็ต/นำเข้าใหม่) — รีเฟรชแท็บ "ชุด Toggle"/"แก้ Prompt" ถ้าเปิด
+    // ค้างอยู่ + แทรก prompt โหมด single ใหม่ (ค่าเริ่มต้นของ CoT ผูกกับเวอร์ชันพรีเซ็ต ต้องอัปเดตทันทีที่สลับ)
     const presetChangeEvents = [eventTypes.OAI_PRESET_CHANGED_AFTER, eventTypes.PRESET_CHANGED];
     for (const evt of presetChangeEvents) {
         if (!evt) continue;
-        eventSource.on(evt, () => refreshToggleTabIfVisible());
+        eventSource.on(evt, () => {
+            applyInjections(ctx);
+            refreshToggleTabIfVisible();
+            refreshPromptTabIfVisible();
+        });
     }
 }
 
@@ -487,8 +519,10 @@ function bindUiHandlers() {
         const s = getSettings();
         delete s.prompts[id];
         setSetting("prompts", s.prompts);
-        $(`.tirakit-prompt-textarea[data-tirakit-prompt-id="${id}"]`).val(PROMPT_DEFS[id].default);
-        updatePromptWarning(id, PROMPT_DEFS[id].default);
+        const variant = detectVariant(getCurrentPresetName(getContext()));
+        const def = getEffectiveDefault(id, variant);
+        $(`.tirakit-prompt-textarea[data-tirakit-prompt-id="${id}"]`).val(def);
+        updatePromptWarning(id, def);
         applyInjections(getContext());
         toastr.success("คืนค่าเริ่มต้นแล้ว", "Tiramisu Kit");
     });
@@ -517,6 +551,31 @@ function bindUiHandlers() {
         let msg = `เปิด ${res.turnedOn} · ปิด ${res.turnedOff}`;
         if (res.skipped.length) msg += ` · ข้าม ${res.skipped.length} (ไม่พบในพรีเซ็ตนี้)`;
         toastr.success(msg, `ใช้ชุด "${set.label}" แล้ว`);
+    });
+
+    $(document).on("click", ".tirakit-set-edit-btn", function () {
+        $(this).closest(".tirakit-set-card").find(".tirakit-set-edit-form").toggleClass("tirakit-hidden");
+    });
+    $(document).on("click", ".tirakit-set-edit-cancel-btn", function () {
+        $(this).closest(".tirakit-set-card").find(".tirakit-set-edit-form").addClass("tirakit-hidden");
+    });
+    $(document).on("click", ".tirakit-set-edit-save-btn", function () {
+        const $card = $(this).closest(".tirakit-set-card");
+        const set = findSetByCard($card);
+        if (!set) return;
+        const label = $card.find(".tirakit-set-edit-name").val().trim();
+        const desc = $card.find(".tirakit-set-edit-desc").val().trim();
+        if (!label) {
+            toastr.warning("ชื่อชุดห้ามว่าง", "Tiramisu Kit");
+            return;
+        }
+        const s = getSettings();
+        const idx = s.toggleSets.findIndex((x) => x.id === set.id);
+        if (idx === -1) return;
+        s.toggleSets[idx] = { ...s.toggleSets[idx], label, desc };
+        setSetting("toggleSets", s.toggleSets);
+        renderToggleTab();
+        toastr.success("แก้ไขชุดแล้ว", "Tiramisu Kit");
     });
 
     $(document).on("click", ".tirakit-set-overwrite-btn", function () {
