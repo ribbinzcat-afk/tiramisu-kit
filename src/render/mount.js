@@ -56,6 +56,7 @@ function dialogueHook(mes, info) {
             theme: d.theme || "messenger",
             tone: d.tone || "dark",
             userQuotes: Boolean(d.userQuotes),
+            textColor: d.textColor || "char",
         });
     } catch (e) {
         console.error(`[${extensionName}] Dialogue hook ล้มเหลว:`, e);
@@ -97,7 +98,7 @@ function computeSig(settings, depthFromEnd) {
     const cotVisible = settings.cotDepth === 0 || depthFromEnd < settings.cotDepth ? 1 : 0;
     const d = settings.dialogue || {};
     const dlg = dialogueActive(settings)
-        ? `${settings.selectedDialogue}${dialogueUseUi(settings, depthFromEnd) ? 1 : 0}${d.theme}${d.tone}${d.userQuotes ? 1 : 0}${getRosterVersion()}${getPersonaKey()}`
+        ? `${settings.selectedDialogue}${dialogueUseUi(settings, depthFromEnd) ? 1 : 0}${d.theme}${d.tone}${d.userQuotes ? 1 : 0}${d.textColor}${getRosterVersion()}${getPersonaKey()}`
         : "-";
     return `${t.log ? 1 : 0}${t.charNote ? 1 : 0}${t.rpgStatus ? 1 : 0}${t.livechat ? 1 : 0}|${cotVisible}|${settings.cotAutoOpen ? 1 : 0}|${dlg}`;
 }
@@ -115,6 +116,7 @@ function buildRenderedText(rawText, settings, depthFromEnd, ctx, message) {
             theme: d.theme || "messenger",
             tone: d.tone || "dark",
             userQuotes: Boolean(d.userQuotes),
+            textColor: d.textColor || "char",
         });
     }
     const tuiOn = settings.tiramisuUi || {};
