@@ -86,7 +86,8 @@ export function renderDialogue(rawText, opts) {
     });
 
     if (isUser && userQuotes && !SAY_TEST_RE.test(rawText)) {
-        out = out.replace(USER_QUOTE_RE, (q) => render("", "", q, true));
+        // แปลงเฉพาะข้อความนอกแท็ก HTML — กันไปจับเครื่องหมายคำพูดใน attribute
+        out = out.split(/(<[^>]*>)/).map((part) => (part.startsWith("<") ? part : part.replace(USER_QUOTE_RE, (q) => render("", "", q, true)))).join("");
     }
     return out;
 }
