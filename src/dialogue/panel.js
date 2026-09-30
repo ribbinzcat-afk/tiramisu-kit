@@ -12,6 +12,7 @@ import {
     nextColor, fallbackColor, autoAddSpeakers, normName,
 } from "./data.js";
 import { uploadImage, deleteImage } from "./images.js";
+import { registerImage, currentOwner, scanImages, formatBytes } from "./cleanup.js";
 
 const PERSONA_ID = "__persona__";
 const ASPECT = { avatar: 1, vn: 3 / 4 };
@@ -129,7 +130,7 @@ export function renderDialogueTab() {
 
     if (scope.kind === "none") {
         html += `<div class="tirakit-group"><small class="tirakit-hint">เปิดแชทกับตัวละครก่อน แล้วค่อยตั้งค่าตัวละครได้</small></div>`;
-        $root.html(html);
+        $root.html(html + cleanupSectionHtml());
         return;
     }
 
@@ -156,7 +157,66 @@ export function renderDialogueTab() {
             <button class="menu_button" data-dlg-act="scan"><i class="fa-solid fa-magnifying-glass"></i> สแกนชื่อจากแชทนี้</button>
         </div>
     </div>`;
-    $root.html(html);
+    $root.html(html + cleanupSectionHtml());
+}
+
+// ===== ตรวจไฟล์ค้าง =====
+let scanResult = null;   // ผลตรวจล่าสุด (คงไว้ระหว่างวาดแท็บใหม่)
+let scanning = false;
+
+function cleanupSectionHtml() {
+    let body = "";
+    if (scanning) {
+        body = `<small class="tirakit-hint" id="tirakit-dlg-scan-progress"><i class="fa-solid fa-spinner fa-spin"></i> กำลังตรวจ...</small>`;
+    } else if (scanResult) {
+        const r = scanResult;
+        const orphanBytes = r.orphans.reduce((a, o) => a + o.bytes, 0);
+        body = `<div class="tirakit-dlg-scan-sum">ทั้งหมด <b>${r.total}</b> ไฟล์ (${formatBytes(r.totalBytes)}) · ใช้อยู่ <b>${r.used}</b> · ค้าง <b>${r.orphans.length}</b> (${formatBytes(orphanBytes)})</div>`;
+        if (r.orphans.length) {
+            body += `<div class="tirakit-dlg-orphans">` + r.orphans.map((o, i) => `
+                <label class="tirakit-dlg-orphan">
+                    <input type="checkbox" class="tirakit-dlg-orphan-check" data-dlg-orphan="${i}" ${o.checked ? "checked" : ""}>
+                    <div class="tirakit-dlg-thumb tirakit-dlg-thumb-sm" style="--tirakit-c:#888"><img src="${escapeText(o.path)}" alt="" style="inset:0;width:100%;height:100%;object-fit:cover;"></div>
+                    <div class="tirakit-dlg-orphan-info"><div>${escapeText(o.name)} · ${formatBytes(o.bytes)}</div><small class="tirakit-hint">${escapeText(o.reason)}</small></div>
+                </label>`).join("") + `</div>
+                <button class="menu_button tirakit-dlg-danger" data-dlg-act="delete-orphans"><i class="fa-solid fa-trash-can"></i> ลบไฟล์ที่เลือก</button>`;
+        } else {
+            body += `<small class="tirakit-hint">ไม่มีไฟล์ค้าง 🎉</small>`;
+        }
+    }
+    return `
+        <div class="tirakit-group">
+            <div class="tirakit-group-title">🧹 ไฟล์รูปบนเซิร์ฟเวอร์</div>
+            <small class="tirakit-hint">ตรวจโฟลเดอร์ user/images/tiramisu-kit/ ว่ามีไฟล์ที่ไม่มีตัวละครหรือ persona ไหนใช้แล้วหรือเปล่า (เช่นหลังลบการ์ด) · ไฟล์ที่ไม่แน่ใจจะไม่ติ๊กไว้ให้</small>
+            <button class="menu_button" data-dlg-act="scan-files" ${scanning ? "disabled" : ""}><i class="fa-solid fa-magnifying-glass"></i> ตรวจไฟล์ค้าง</button>
+            ${body}
+        </div>`;
+}
+
+async function runScan() {
+    scanning = true;
+    renderDialogueTab();
+    try {
+        scanResult = await scanImages((msg) => $("#tirakit-dlg-scan-progress").html(`<i class="fa-solid fa-spinner fa-spin"></i> ${escapeText(msg)}`));
+    } catch (e) {
+        console.error(`[${extensionName}] ตรวจไฟล์ค้างล้มเหลว:`, e);
+        toastr.error(String(e.message || e), "ตรวจไฟล์ไม่สำเร็จ");
+        scanResult = null;
+    } finally {
+        scanning = false;
+        renderDialogueTab();
+    }
+}
+
+async function deleteSelectedOrphans() {
+    if (!scanResult) return;
+    const picks = scanResult.orphans.filter((o) => o.checked);
+    if (!picks.length) { toastr.info("ยังไม่ได้เลือกไฟล์", "Tiramisu Kit"); return; }
+    if (!window.confirm(`ลบไฟล์รูป ${picks.length} ไฟล์ออกจากเซิร์ฟเวอร์? (กู้คืนไม่ได้)`)) return;
+    let ok = 0;
+    for (const o of picks) if (await deleteImage(o.path)) ok++;
+    toastr.success(`ลบแล้ว ${ok}/${picks.length} ไฟล์`, "Tiramisu Kit");
+    await runScan();
 }
 
 // ===== ตัวครอป =====
@@ -263,6 +323,7 @@ async function handleFile(file) {
     const toast = toastr.info("กำลังย่อและอัปโหลดรูป...", "Tiramisu Kit", { timeOut: 0 });
     try {
         const path = await uploadImage(file);
+        registerImage(path, currentOwner(ctx, target.id === PERSONA_ID));
         let oldPath = null;
         writeEntry(ctx, target.id, (e) => {
             if (target.mood) {
@@ -308,6 +369,8 @@ export function bindDialogueHandlers(onChange) {
         const ctx = ctxNow();
 
         if (act === "upload") return startUpload(id);
+        if (act === "scan-files") return runScan();
+        if (act === "delete-orphans") return deleteSelectedOrphans();
         if (act === "crop") return openCrop(id, mood);
         if (act === "more") {
             $(`[data-dlg-moods="${CSS.escape(id)}"]`).toggleClass("tirakit-hidden");
@@ -362,6 +425,11 @@ export function bindDialogueHandlers(onChange) {
             onChangeCb();
             renderDialogueTab();
         }
+    });
+
+    $(document).on("change", "#tirakit-dlg-root .tirakit-dlg-orphan-check", function () {
+        const o = scanResult?.orphans?.[Number($(this).data("dlg-orphan"))];
+        if (o) o.checked = $(this).prop("checked");
     });
 
     $(document).on("change", "#tirakit-dlg-root .tirakit-dlg-color", function () {

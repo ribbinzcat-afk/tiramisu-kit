@@ -35,6 +35,7 @@ export const defaultSettings = {
         autoAdd: true,        // เพิ่ม NPC ที่ AI ตั้งชื่อขึ้นใหม่เข้าแกลเลอรีอัตโนมัติ
     },
     dialoguePersonas: {},     // ไฟล์อวาตาร์ persona -> { color, img }
+    dialogueImages: {},       // ทะเบียนรูปที่อัปโหลด: ชื่อไฟล์ -> เจ้าของ (ใช้ตรวจไฟล์ค้าง ดู src/dialogue/cleanup.js)
     rngEnabled: false,
     tiramisuUi: { log: false, charNote: false, rpgStatus: false, livechat: false },
     livechatDepth: 2,        // ส่งแชทไลฟ์เข้า prompt แค่ N ข้อความหลังสุด (0 = ไม่จำกัด) — บนจอยังแสดงครบ
@@ -91,6 +92,7 @@ export function getSettings() {
         if (s.dialogue[k] === undefined) s.dialogue[k] = v;
     }
     if (!s.dialoguePersonas || typeof s.dialoguePersonas !== "object") s.dialoguePersonas = {};
+    if (!s.dialogueImages || typeof s.dialogueImages !== "object") s.dialogueImages = {};
     // ย้ายค่าจาก Colorful Dialogue เดิม (AI เลือกสีเอง) มาเป็นโหมดข้อความสีของระบบใหม่
     if (s.selectedDialogue === "light" || s.selectedDialogue === "dark") {
         s.dialogue.tone = s.selectedDialogue;

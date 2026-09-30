@@ -6,6 +6,7 @@
 // deps: ../store.js
 
 import { extensionName } from "../store.js";
+import { unregisterImage } from "./cleanup.js";
 
 const MAX_SIDE = 512;
 const QUALITY = 0.85;
@@ -73,8 +74,13 @@ export async function deleteImage(path) {
             headers: headers(),
             body: JSON.stringify({ path }),
         });
-        if (!res.ok && res.status !== 404) console.warn(`[${extensionName}] ลบรูป ${path} ไม่สำเร็จ (${res.status})`);
+        if (res.ok || res.status === 404) {
+            unregisterImage(path);
+            return true;
+        }
+        console.warn(`[${extensionName}] ลบรูป ${path} ไม่สำเร็จ (${res.status})`);
     } catch (e) {
         console.warn(`[${extensionName}] ลบรูป ${path} ล้มเหลว:`, e);
     }
+    return false;
 }
