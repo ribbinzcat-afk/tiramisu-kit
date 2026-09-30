@@ -430,6 +430,9 @@
 }
 .mes_text .custom-tirakit-dlg-mood::before { content: "· "; }
 .mes_text .custom-tirakit-dlg q { color: inherit; }
+/* สีบทพูดในกล่อง UI — --tirakit-t = สีประจำตัวละคร หรือ SmartThemeQuoteColor ตามที่ตั้งไว้ */
+.mes_text .custom-tirakit-dlg-bub,
+.mes_text .custom-tirakit-dlg-text { color: var(--tirakit-t, inherit); }
 .mes_text .custom-tirakit-dlg-t q { color: inherit; }
 
 /* ----- ธีมแชทเมสเสจเจอร์ ----- */

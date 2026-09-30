@@ -50,11 +50,11 @@ function colorOf(speaker, name, tone) {
     return /^(#[0-9a-f]{3,8}|hsl\([^)]*\)|rgb\([^)]*\))$/i.test(String(c || "")) ? c : fallbackColor(tone, name);
 }
 
-function uiBlock(theme, { name, mood, text, color, speaker, right }) {
+function uiBlock(theme, { name, mood, text, color, textColor, speaker, right }) {
     const r = right ? " tirakit-dlg-r" : "";
     const n = escapeText(name);
     const m = mood ? `<small class="tirakit-dlg-mood">${escapeText(mood)}</small>` : "";
-    const style = `--tirakit-c:${color};`;
+    const style = `--tirakit-c:${color}; --tirakit-t:${textColor};`;
     if (theme === "vn") {
         return `<div class="tirakit-dlg tirakit-dlg-vn${r}" style="${style}"><div class="tirakit-dlg-pic">${picHtml(speaker, name, mood, "vn")}</div><div class="tirakit-dlg-box"><div class="tirakit-dlg-plate"><span>${n}${m}</span></div><div class="tirakit-dlg-text">${text}</div><span class="tirakit-dlg-next">▼</span></div></div>`;
     }
@@ -64,9 +64,11 @@ function uiBlock(theme, { name, mood, text, color, speaker, right }) {
     return `<div class="tirakit-dlg tirakit-dlg-msg${r}" style="${style}"><div class="tirakit-dlg-pic">${picHtml(speaker, name, mood, "avatar")}</div><div class="tirakit-dlg-col"><span class="tirakit-dlg-name">${n}${m}</span><div class="tirakit-dlg-bub">${text}</div></div></div>`;
 }
 
-// opts: { ctx, roster, isUser, ui, theme, tone, userQuotes }
+// opts: { ctx, roster, isUser, ui, theme, tone, userQuotes, textColor }
+// textColor: "char" = สีบทพูดเป็นสีประจำตัวละคร | "quote" = ใช้สีคำพูดของธีม ST (SmartThemeQuoteColor)
 export function renderDialogue(rawText, opts) {
     const { ctx, roster, isUser, ui, theme, tone, userQuotes } = opts;
+    const useQuoteColor = opts.textColor === "quote";
     let out = String(rawText ?? "");
 
     const render = (name, mood, inner, forceUser) => {
@@ -74,9 +76,10 @@ export function renderDialogue(rawText, opts) {
         const shownName = forceUser ? (ctx?.name1 || name) : name;
         const color = colorOf(speaker, shownName, tone);
         const text = escapeText(String(inner).trim());
-        if (!ui) return `<span class="tirakit-dlg-t" style="color:${color};">${text}</span>`;
+        const textColor = useQuoteColor ? "var(--SmartThemeQuoteColor, #e6a15b)" : color;
+        if (!ui) return `<span class="tirakit-dlg-t" style="color:${textColor};">${text}</span>`;
         const right = Boolean(speaker?.isUser || forceUser);
-        return uiBlock(theme, { name: shownName, mood, text, color, speaker, right });
+        return uiBlock(theme, { name: shownName, mood, text, color, textColor, speaker, right });
     };
 
     out = out.replace(SAY_RE, (m, attrs, inner) => {

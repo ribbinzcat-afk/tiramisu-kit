@@ -139,6 +139,7 @@ function loadPanelUi() {
     $("#tirakit-dlg-theme").val(s.dialogue.theme);
     $("#tirakit-dlg-uidepth").val(s.dialogue.uiDepth);
     $("#tirakit-dlg-tone").val(s.dialogue.tone);
+    $("#tirakit-dlg-textcolor").val(s.dialogue.textColor || "char");
     $("#tirakit-dlg-promptdepth").val(s.dialogue.promptDepth);
     $("#tirakit-dlg-userquotes").prop("checked", Boolean(s.dialogue.userQuotes));
     $("#tirakit-dlg-autoadd").prop("checked", Boolean(s.dialogue.autoAdd));
@@ -488,6 +489,7 @@ function bindUiHandlers() {
     $(document).on("change", "#tirakit-dlg-theme", function () { setDialogue("theme", $(this).val()); });
     $(document).on("change", "#tirakit-dlg-uidepth", function () { setDialogue("uiDepth", Math.max(0, Number($(this).val()) || 0)); });
     $(document).on("change", "#tirakit-dlg-tone", function () { setDialogue("tone", $(this).val()); });
+    $(document).on("change", "#tirakit-dlg-textcolor", function () { setDialogue("textColor", $(this).val()); });
     $(document).on("change", "#tirakit-dlg-promptdepth", function () { setDialogue("promptDepth", Math.max(0, Number($(this).val()) || 0)); });
     $(document).on("change", "#tirakit-dlg-userquotes", function () { setDialogue("userQuotes", $(this).prop("checked")); });
     $(document).on("change", "#tirakit-dlg-autoadd", function () { setDialogue("autoAdd", $(this).prop("checked")); });
