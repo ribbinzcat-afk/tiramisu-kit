@@ -23,7 +23,17 @@ export const defaultSettings = {
     // ui / dialogue: เลือกได้ 1 อัน (หรือ "" = ปิด), ที่เหลือ toggle อิสระ (object ของ id -> bool)
     selectedUi: "",           // "" | light | dark | jsLight | jsDark | custom
     uiCustomText: "",         // เนื้อหาที่ผู้ใช้กรอกเองเมื่อเลือก custom
-    selectedDialogue: "",     // "" | light | dark
+    selectedDialogue: "",     // "" | text (ข้อความสี) | ui (กล่องตามธีม) — ค่าเก่า light/dark ย้ายเป็น text อัตโนมัติ
+    // Dialogue: ตั้งค่าการแสดงผล (ข้อมูลตัวละครอยู่ในการ์ด/แชทกลุ่ม ดู src/dialogue/data.js)
+    dialogue: {
+        theme: "messenger",   // messenger | vn | simple
+        uiDepth: 3,           // แสดง UI เฉพาะ N ข้อความล่าสุด (0 = ทั้งหมด) ที่เก่ากว่าเป็นข้อความสี
+        promptDepth: 2,       // เก็บแท็ก <say> ไว้ใน prompt แค่ N ข้อความล่าสุด ที่เก่ากว่าแปลงเป็น "ชื่อ: บทพูด"
+        tone: "dark",         // โทนสีอัตโนมัติของตัวละครใหม่ (dark = สีสว่างบนพื้นมืด)
+        userQuotes: true,     // แปลงเครื่องหมายคำพูดในข้อความของผู้ใช้เป็นบทพูดของ persona
+        autoAdd: true,        // เพิ่ม NPC ที่ AI ตั้งชื่อขึ้นใหม่เข้าแกลเลอรีอัตโนมัติ
+    },
+    dialoguePersonas: {},     // ไฟล์อวาตาร์ persona -> { color, img }
     rngEnabled: false,
     tiramisuUi: { log: false, charNote: false, rpgStatus: false, livechat: false },
     livechatDepth: 2,        // ส่งแชทไลฟ์เข้า prompt แค่ N ข้อความหลังสุด (0 = ไม่จำกัด) — บนจอยังแสดงครบ
@@ -75,6 +85,16 @@ export function getSettings() {
         if (!s.injectPos[g] || typeof s.injectPos[g] !== "object") s.injectPos[g] = structuredClone(defaultSettings.injectPos[g]);
     }
     if (!s.prompts || typeof s.prompts !== "object") s.prompts = {};
+    if (!s.dialogue || typeof s.dialogue !== "object") s.dialogue = structuredClone(defaultSettings.dialogue);
+    for (const [k, v] of Object.entries(defaultSettings.dialogue)) {
+        if (s.dialogue[k] === undefined) s.dialogue[k] = v;
+    }
+    if (!s.dialoguePersonas || typeof s.dialoguePersonas !== "object") s.dialoguePersonas = {};
+    // ย้ายค่าจาก Colorful Dialogue เดิม (AI เลือกสีเอง) มาเป็นโหมดข้อความสีของระบบใหม่
+    if (s.selectedDialogue === "light" || s.selectedDialogue === "dark") {
+        s.dialogue.tone = s.selectedDialogue;
+        s.selectedDialogue = "text";
+    }
     if (!Array.isArray(s.toggleSets)) s.toggleSets = [];
     return s;
 }

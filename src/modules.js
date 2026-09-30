@@ -9,7 +9,7 @@
 // splittable: มีโหมดเจนแยก (split) รองรับไหม
 export const MODULE_GROUPS = [
     { id: "ui", label: "UI Creation", select: true },
-    { id: "dialogue", label: "Colorful Dialogue", select: true },
+    { id: "dialogue", label: "Dialogue", select: true },
     { id: "rng", label: "RNG Situation", select: false },
     { id: "tiramisuUi", label: "Tiramisu's UI", select: false, splittable: true },
     { id: "theatre", label: "Mini Theatre", select: false, splittable: true },
@@ -24,9 +24,9 @@ export const MODULES = [
     { id: "jsDark", group: "ui", label: "with JS - Dark", promptId: "uiJsDark" },
     { id: "custom", group: "ui", label: "Custom Theme", promptId: "uiCustom" },
 
-    // ===== Colorful Dialogue (เลือก 1) =====
-    { id: "light", group: "dialogue", label: "Light Mode", promptId: "dialogueLight" },
-    { id: "dark", group: "dialogue", label: "Dark Mode", promptId: "dialogueDark" },
+    // ===== Dialogue (เลือก 1: ข้อความสี / UI — ใช้ prompt เดียวกัน ต่างกันแค่การแสดงผล) =====
+    { id: "text", group: "dialogue", label: "ข้อความสี", promptId: "dialogue", tag: "say" },
+    { id: "ui", group: "dialogue", label: "UI", promptId: "dialogue", tag: "say" },
 
     // ===== RNG =====
     { id: "rng", group: "rng", label: "RNG Situation (d100)", promptId: "rng" },

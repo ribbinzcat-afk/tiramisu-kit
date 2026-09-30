@@ -11,6 +11,8 @@ import { listConnectionProfiles, lastCalls } from "./src/api.js";
 import { applyInjections, clearAllInjections } from "./src/inject.js";
 import { tiramisuKitInterceptor, takePendingCot } from "./src/interceptor.js";
 import { runPostGeneration } from "./src/post.js";
+import { renderDialogueTab, bindDialogueHandlers } from "./src/dialogue/panel.js";
+import { autoAddSpeakers } from "./src/dialogue/data.js";
 import { sweepAllMessages, sweepOneMessage, clearRenderCache } from "./src/render/mount.js";
 import { BUILTIN_SETS } from "./src/toggle-sets.js";
 import {
@@ -54,6 +56,17 @@ function switchPanelTab(tab) {
     $(`.tirakit-tabpane[data-tirakit-pane="${tab}"]`).removeClass("tirakit-hidden");
     if (tab === "tokens") renderTokenTab();
     if (tab === "toggles") renderToggleTab();
+    if (tab === "dialogue") renderDialogueTab();
+}
+
+function refreshDialogueTabIfVisible() {
+    if (!$('.tirakit-tabpane[data-tirakit-pane="dialogue"]').hasClass("tirakit-hidden")) renderDialogueTab();
+}
+
+function updateDialogueOptsState() {
+    const mode = getSetting("selectedDialogue") || "";
+    $("#tirakit-dlg-opts, #tirakit-dlg-open-tab").toggle(Boolean(mode));
+    $(".tirakit-dlg-ui-only").toggle(mode === "ui");
 }
 
 // เรียกตอนพรีเซ็ตเปลี่ยน — รีเฟรชแท็บ "ชุด Toggle" เฉพาะตอนเปิดแท็บนั้นค้างอยู่ (ไม่ทำงานเปล่าๆ ตอนไม่ได้ดู)
@@ -123,6 +136,13 @@ function loadPanelUi() {
     $("#tirakit-ui-custom-wrap").toggle(s.selectedUi === "custom");
 
     $("#tirakit-select-dialogue").val(s.selectedDialogue || "");
+    $("#tirakit-dlg-theme").val(s.dialogue.theme);
+    $("#tirakit-dlg-uidepth").val(s.dialogue.uiDepth);
+    $("#tirakit-dlg-tone").val(s.dialogue.tone);
+    $("#tirakit-dlg-promptdepth").val(s.dialogue.promptDepth);
+    $("#tirakit-dlg-userquotes").prop("checked", Boolean(s.dialogue.userQuotes));
+    $("#tirakit-dlg-autoadd").prop("checked", Boolean(s.dialogue.autoAdd));
+    updateDialogueOptsState();
 
     $("#tirakit-toggle-rng").prop("checked", Boolean(s.rngEnabled));
 
@@ -365,7 +385,13 @@ function bindChatEvents(ctx) {
         clearRenderCache();
         applyInjections(ctx);
         sweepAllMessages(ctx);
+        refreshDialogueTabIfVisible();
     });
+
+    // สลับ persona → สี/รูปของผู้ใช้เปลี่ยนตาม
+    if (eventTypes.SETTINGS_UPDATED) {
+        eventSource.on(eventTypes.SETTINGS_UPDATED, () => refreshDialogueTabIfVisible());
+    }
 
     const resweepEvents = [
         eventTypes.CHARACTER_MESSAGE_RENDERED,
@@ -383,6 +409,18 @@ function bindChatEvents(ctx) {
         if (!evt) continue;
         eventSource.on(evt, (mesId) => sweepOneMessage(ctx, mesId));
     }
+
+    eventSource.on(eventTypes.MESSAGE_RECEIVED, (mesId) => {
+        const s = getSettings();
+        if (!s.enabled || !s.selectedDialogue || !s.dialogue?.autoAdd) return;
+        const msg = ctx.chat?.[mesId];
+        if (!msg || msg.is_user) return;
+        const added = autoAddSpeakers(ctx, [msg.mes], s.dialogue.tone);
+        if (added) {
+            applyInjections(ctx);
+            refreshDialogueTabIfVisible();
+        }
+    });
 
     eventSource.on(eventTypes.MESSAGE_RECEIVED, (mesId, type) => {
         handleMessageReceived(ctx, mesId, type).catch((e) => console.error(`[${extensionName}] handleMessageReceived ล้มเหลว:`, e));
@@ -440,8 +478,29 @@ function bindUiHandlers() {
         setSetting("uiCustomText", $(this).val());
         applyInjections(getContext());
     });
+    const setDialogue = (key, val) => {
+        const s = getSettings();
+        s.dialogue[key] = val;
+        setSetting("dialogue", s.dialogue);
+        sweepAllMessages(getContext());
+    };
+    $(document).on("change", "#tirakit-dlg-theme", function () { setDialogue("theme", $(this).val()); });
+    $(document).on("change", "#tirakit-dlg-uidepth", function () { setDialogue("uiDepth", Math.max(0, Number($(this).val()) || 0)); });
+    $(document).on("change", "#tirakit-dlg-tone", function () { setDialogue("tone", $(this).val()); });
+    $(document).on("change", "#tirakit-dlg-promptdepth", function () { setDialogue("promptDepth", Math.max(0, Number($(this).val()) || 0)); });
+    $(document).on("change", "#tirakit-dlg-userquotes", function () { setDialogue("userQuotes", $(this).prop("checked")); });
+    $(document).on("change", "#tirakit-dlg-autoadd", function () { setDialogue("autoAdd", $(this).prop("checked")); });
+    $(document).on("click", "#tirakit-dlg-open-tab", function () { switchPanelTab("dialogue"); });
+    bindDialogueHandlers(() => {
+        const ctx = getContext();
+        applyInjections(ctx); // รายชื่อรูปอารมณ์อยู่ใน prompt ของ Dialogue
+        sweepAllMessages(ctx);
+    });
+
     $(document).on("change", "#tirakit-select-dialogue", function () {
         setSetting("selectedDialogue", $(this).val());
+        updateDialogueOptsState();
+        sweepAllMessages(getContext());
         applyInjections(getContext());
     });
     $(document).on("change", "#tirakit-toggle-rng", function () {

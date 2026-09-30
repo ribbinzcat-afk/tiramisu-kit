@@ -7,6 +7,7 @@ import { MODULE_GROUPS, modulesInGroup } from "./modules.js";
 import { buildPrompt } from "./prompts.js";
 import { getSettings } from "./store.js";
 import { getCurrentPresetName, detectVariant } from "./preset.js";
+import { moodHint } from "./dialogue/data.js";
 
 const KEY_PREFIX = "tirakit_";
 // โหมด split จัดการกลุ่มพวกนี้เอง (CoT เจนก่อนใน interceptor, Theatre/Tiramisu UI เจนตามหลังใน post.js)
@@ -26,7 +27,9 @@ function buildGroupText(groupId, settings, variant) {
     if (groupId === "dialogue") {
         const mod = mods.find((m) => m.id === settings.selectedDialogue);
         if (!mod) return "";
-        return buildPrompt(mod.promptId, {}, settings.prompts, variant);
+        let hint = "";
+        try { hint = moodHint(SillyTavern.getContext()); } catch (e) { hint = ""; }
+        return buildPrompt(mod.promptId, { moods: hint }, settings.prompts, variant);
     }
 
     if (groupId === "rng") {
