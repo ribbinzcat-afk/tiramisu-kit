@@ -13,7 +13,7 @@ import { tiramisuKitInterceptor, takePendingCot } from "./src/interceptor.js";
 import { runPostGeneration } from "./src/post.js";
 import { renderDialogueTab, bindDialogueHandlers } from "./src/dialogue/panel.js";
 import { autoAddSpeakers } from "./src/dialogue/data.js";
-import { sweepAllMessages, sweepOneMessage, clearRenderCache } from "./src/render/mount.js";
+import { sweepAllMessages, sweepOneMessage, clearRenderCache, installFormatterHook } from "./src/render/mount.js";
 import { BUILTIN_SETS } from "./src/toggle-sets.js";
 import {
     isPromptManagerAvailable, getCurrentPresetName, detectVariant,
@@ -413,11 +413,12 @@ function bindChatEvents(ctx) {
     eventSource.on(eventTypes.MESSAGE_RECEIVED, (mesId) => {
         const s = getSettings();
         if (!s.enabled || !s.selectedDialogue || !s.dialogue?.autoAdd) return;
-        const msg = ctx.chat?.[mesId];
+        const cur = getContext(); // context สด — characterId ของตัวที่เก็บไว้ตอนโหลดค้างค่าเก่า
+        const msg = cur.chat?.[mesId];
         if (!msg || msg.is_user) return;
-        const added = autoAddSpeakers(ctx, [msg.mes], s.dialogue.tone);
+        const added = autoAddSpeakers(cur, [msg.mes], s.dialogue.tone);
         if (added) {
-            applyInjections(ctx);
+            applyInjections(cur);
             refreshDialogueTabIfVisible();
         }
     });
@@ -737,6 +738,7 @@ jQuery(async () => {
         mountWandButton();
 
         const ctx = getContext();
+        installFormatterHook(ctx);
         bindChatEvents(ctx);
         applyInjections(ctx);
         sweepAllMessages(ctx);

@@ -579,20 +579,27 @@
 
 /* ตัวครอป */
 .tirakit-dlg-crop {
+    /* ST ทำให้ containing block ของ position:fixed ไม่ใช่ viewport — inset:0 จะได้กล่องสูงแค่ไม่กี่ px
+     * (หน้าต่างครอปเลยลอยหลุดขึ้นไปด้านบน) ต้องใช้หน่วย viewport ตรงๆ เหมือน .tirakit-panel */
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
     z-index: 10001;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
     background: rgba(0, 0, 0, 0.6);
-    padding: 12px;
+    padding: max(12px, env(safe-area-inset-top)) 12px 12px;
 }
 .tirakit-dlg-crop.tirakit-hidden { display: none; }
 .tirakit-dlg-crop, .tirakit-dlg-crop * { box-sizing: border-box; }
 .tirakit-dlg-crop-card {
     width: min(560px, 96vw);
-    max-height: 92dvh;
-    overflow: auto;
+    margin: auto 0;
     padding: 12px;
     border-radius: 12px;
     background: var(--SmartThemeBlurTintColor, #1e1e1e);
@@ -600,7 +607,7 @@
     color: var(--SmartThemeBodyColor, #ddd);
 }
 .tirakit-dlg-crop-stage { position: relative; width: fit-content; max-width: 100%; margin: 10px auto; touch-action: none; user-select: none; }
-.tirakit-dlg-crop-img { display: block; max-width: 100%; max-height: 55dvh; }
+.tirakit-dlg-crop-img { display: block; max-width: 100%; max-height: 45vh; max-height: 45dvh; }
 .tirakit-dlg-crop-rect {
     position: absolute;
     border: 2px solid #fff;
@@ -611,3 +618,4 @@
 .tirakit-dlg-crop-stage { overflow: hidden; }
 .tirakit-dlg-crop-size-row { display: flex; align-items: center; gap: 8px; }
 .tirakit-dlg-crop-size-row input { flex: 1; }
+.tirakit-dlg-bottom .menu_button { width: auto; white-space: nowrap; margin: 0; }

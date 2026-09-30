@@ -22,7 +22,58 @@ import { getRoster, getRosterVersion, getPersonaKey } from "../dialogue/data.js"
 const TAG_TEST_RE = /<(tiramisu_log|char_note|rpg_status|livechat|planning)\b/i;
 
 // cache กัน re-render ซ้ำเปล่าๆ: mesId -> { rawText, sig }
+// ใช้คู่กับ marker ใน DOM — ถ้า ST วาดข้อความทับเอง (เช่นตอนจบสตรีม / stream fade-in) marker จะหาย แล้วเราวาดใหม่
 const renderCache = new Map();
+const MARKER_CLASS = "tirakit-rendered";
+
+// ===== Dialogue ผ่าน MessageFormatter hook ของ ST (ST รุ่นใหม่) =====
+// ให้ ST เรียกตัวแปลง <say> เองทุกครั้งที่จัดรูปแบบข้อความ (รวมระหว่างสตรีม) — ไม่ต้องแย่งกันเขียน DOM
+// ST รุ่นเก่าที่ไม่มี hook → ตกไปใช้การกวาดข้อความ (sweep) แบบเดิม
+let dialogueHookInstalled = false;
+
+function depthOf(chat, mesId) {
+    if (!Array.isArray(chat) || mesId == null || mesId < 0) return 0;
+    let depth = 0;
+    for (let i = chat.length - 1; i > mesId; i--) if (!chat[i]?.is_system) depth++;
+    return depth;
+}
+
+function dialogueHook(mes, info) {
+    try {
+        if (info?.isReasoning || info?.isSystem) return mes;
+        const settings = getSettings();
+        if (!dialogueActive(settings)) return mes;
+        const text = String(mes ?? "");
+        const isUser = Boolean(info?.isUser);
+        if (!SAY_TEST_RE.test(text) && !(isUser && settings.dialogue?.userQuotes && QUOTE_TEST_RE.test(text))) return mes;
+        const ctx = SillyTavern.getContext();
+        const d = settings.dialogue || {};
+        return renderDialogue(text, {
+            ctx,
+            roster: getRoster(ctx),
+            isUser,
+            ui: dialogueUseUi(settings, depthOf(ctx.chat, Number(info?.messageId))),
+            theme: d.theme || "messenger",
+            tone: d.tone || "dark",
+            userQuotes: Boolean(d.userQuotes),
+        });
+    } catch (e) {
+        console.error(`[${extensionName}] Dialogue hook ล้มเหลว:`, e);
+        return mes;
+    }
+}
+
+export function installFormatterHook(ctx) {
+    const mf = ctx?.messageFormatter;
+    if (dialogueHookInstalled || !mf || typeof mf.addHook !== "function") return false;
+    try {
+        mf.addHook(dialogueHook, { stage: mf.stage?.BEFORE_REGEX ?? "beforeRegex", order: mf.order?.EARLY ?? 10 });
+        dialogueHookInstalled = true;
+    } catch (e) {
+        console.warn(`[${extensionName}] ลง MessageFormatter hook ไม่สำเร็จ — ใช้การกวาดข้อความแทน:`, e);
+    }
+    return dialogueHookInstalled;
+}
 
 function dialogueActive(settings) {
     return Boolean(settings.enabled) && (settings.selectedDialogue === "text" || settings.selectedDialogue === "ui");
@@ -54,7 +105,7 @@ function computeSig(settings, depthFromEnd) {
 // คืนข้อความที่แปลงแท็กแล้วตามโมดูลที่เปิดอยู่จริง + กติกาความลึกของ CoT
 function buildRenderedText(rawText, settings, depthFromEnd, ctx, message) {
     let out = String(rawText ?? "");
-    if (wantsDialogue(settings, message, out)) {
+    if (!dialogueHookInstalled && wantsDialogue(settings, message, out)) {
         const d = settings.dialogue || {};
         out = renderDialogue(out, {
             ctx,
@@ -108,14 +159,17 @@ function renderOneMessage(ctx, mesId, depthFromEnd) {
 
     const sig = computeSig(settings, depthFromEnd);
     const cached = renderCache.get(mesId);
-    if (cached && cached.rawText === rawText && cached.sig === sig) return; // ไม่มีอะไรเปลี่ยน ข้าม
+    const $mesText = $(`#chat [mesid="${mesId}"] .mes_text`);
+    if (cached && cached.rawText === rawText && cached.sig === sig && $mesText.children(`.${MARKER_CLASS}`).length) return; // ไม่มีอะไรเปลี่ยน ข้าม
 
-    const rendered = buildRenderedText(rawText, settings, depthFromEnd, ctx, message);
     try {
+        const rendered = buildRenderedText(rawText, settings, depthFromEnd, ctx, message);
         if (typeof ctx.messageFormatting !== "function") return;
         const html = ctx.messageFormatting(rendered, message.name, message.is_system, message.is_user, mesId);
-        const $mesText = $(`#chat [mesid="${mesId}"] .mes_text`);
-        if ($mesText.length) $mesText.html(html);
+        if ($mesText.length) {
+            $mesText.html(html);
+            $mesText.append(`<i class="${MARKER_CLASS}" hidden></i>`);
+        }
         renderCache.set(mesId, { rawText, sig });
     } catch (e) {
         console.error(`[${extensionName}] render ข้อความ #${mesId} ล้มเหลว:`, e);
@@ -140,7 +194,8 @@ function nonSystemIndices(chat) {
 }
 
 // กวาดทุกข้อความในแชท — ใช้ตอนเหตุการณ์ที่ทำให้จำนวน/ลำดับข้อความเปลี่ยน (ความลึกของทุกข้อความขยับหมด)
-export function sweepAllMessages(ctx) {
+export function sweepAllMessages() {
+    const ctx = SillyTavern.getContext(); // ขอใหม่ทุกครั้ง — context ที่เก็บไว้ตอนโหลดมี characterId/chatMetadata ค้างของเก่า
     const chat = ctx?.chat;
     if (!Array.isArray(chat) || !chat.length) return;
     const idx = nonSystemIndices(chat);
@@ -149,7 +204,8 @@ export function sweepAllMessages(ctx) {
 }
 
 // กวาดข้อความเดียว — ใช้ได้เฉพาะเหตุการณ์ที่ไม่กระทบจำนวนข้อความอื่น (แก้ไขเนื้อหาข้อความเดิม)
-export function sweepOneMessage(ctx, mesId) {
+export function sweepOneMessage(_ctx, mesId) {
+    const ctx = SillyTavern.getContext();
     const chat = ctx?.chat;
     if (!Array.isArray(chat) || mesId == null || !chat[Number(mesId)]) return;
     const idx = nonSystemIndices(chat);
