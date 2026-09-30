@@ -121,6 +121,58 @@ export function replaceRpgStatus(text) {
     return String(text ?? "").replace(RPG_RE, renderRpgStatusTag);
 }
 
+// ===== Livestream Chat =====
+// แท็ก: <livechat viewers="1234">\nชื่อ: ข้อความ\nชื่อ [฿100]: ข้อความ\n</livechat>
+// แยกบรรทัด/ชื่อ/โดเนทด้วย JS ฝั่ง extension แล้วประกอบ HTML inline style ที่ escape แล้วทุกช่อง
+// (ไม่ต้องพึ่ง Tavern Helper) — จุด LIVE กะพริบใช้ @keyframes tirakit-live-blink จาก style.css
+const LIVECHAT_RE = /<livechat\b([^>]*)>([\s\S]*?)<\/livechat>/gi;
+const LIVECHAT_COLORS = ["#ff7eb6", "#7ec8ff", "#9dff9a", "#ffcf6e", "#c49bff", "#6ef0e0", "#ff9f6e", "#f5f07a"];
+
+function livechatColor(name) {
+    let h = 0;
+    for (const ch of String(name)) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+    return LIVECHAT_COLORS[h % LIVECHAT_COLORS.length];
+}
+
+function livechatRow(line) {
+    const cut = line.indexOf(":");
+    if (cut < 1) return "";
+    let who = line.slice(0, cut).trim();
+    const text = line.slice(cut + 1).trim();
+    let amt = "";
+    const m = who.match(/^(.*?)\s*\[([^\]]+)\]$/);
+    if (m) { who = m[1].trim(); amt = m[2].trim(); }
+    if (!who || !text) return "";
+    const name = `<span style="font-weight:700; margin-right:6px; color:${livechatColor(who)};">${escapeText(who)}</span>`;
+    if (amt) {
+        return `<div style="font-size:0.9em; line-height:1.55; word-break:break-word; background:linear-gradient(90deg,#3a2a12,#2a2012); border:1px solid #6b4d1a; border-radius:10px; padding:6px 10px;">`
+            + `<span style="display:inline-flex; align-items:center; gap:4px; background:#f2b33d; color:#2a1a00; font-weight:700; font-size:0.8em; padding:1px 8px; border-radius:999px; margin-right:6px;"><i class="fa-solid fa-gift"></i> ${escapeText(amt)}</span>`
+            + `${name}<span style="color:#ffe7b8;">${escapeText(text)}</span></div>`;
+    }
+    return `<div style="font-size:0.9em; line-height:1.55; word-break:break-word;">${name}<span>${escapeText(text)}</span></div>`;
+}
+
+export function renderLivechatTag(match, attrs, body) {
+    const vMatch = String(attrs).match(/viewers\s*=\s*["']?([^"'>]*)/i);
+    const vNum = vMatch ? parseInt(vMatch[1].replace(/[^\d]/g, ""), 10) : NaN;
+    const viewers = Number.isFinite(vNum) ? vNum.toLocaleString("en-US") : "—";
+    const rows = String(body).split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map(livechatRow).join("");
+    if (!rows) return "";
+    return `<div class="tirakit-box-wrap tirakit-livechat" style="max-width:100%; margin:14px auto; padding:0 6px; font-family:'Prompt','Sarabun',sans-serif;">`
+        + `<div style="max-width:560px; margin:0 auto; background:#17151f; border:1px solid #2e2a3d; border-radius:14px; overflow:hidden; color:#ece9f5; box-shadow:0 4px 18px rgba(0,0,0,0.3);">`
+        + `<div style="display:flex; align-items:center; gap:10px; padding:9px 14px; background:linear-gradient(90deg,#241f33,#1b1826); border-bottom:1px solid #2e2a3d;">`
+        + `<span style="display:inline-flex; align-items:center; gap:6px; background:#e5364a; color:#fff; font-weight:700; font-size:0.75em; letter-spacing:0.06em; padding:2px 9px; border-radius:6px;"><span style="width:7px; height:7px; border-radius:50%; background:#fff; animation:tirakit-live-blink 1.4s infinite;"></span>LIVE</span>`
+        + `<span style="flex:1;"></span>`
+        + `<span style="display:inline-flex; align-items:center; gap:6px; font-size:0.85em; font-weight:600; color:#ff8a9a;"><i class="fa-solid fa-eye"></i> ${escapeText(viewers)}</span>`
+        + `</div>`
+        + `<div style="padding:10px 14px 12px; display:flex; flex-direction:column; gap:6px; max-height:280px; overflow-y:auto;">${rows}</div>`
+        + `</div></div>`;
+}
+
+export function replaceLivechat(text) {
+    return String(text ?? "").replace(LIVECHAT_RE, renderLivechatTag);
+}
+
 // ===== ตัวรวม =====
 // เรียกทั้ง 3 ตัวตามลำดับ — แท็กที่ช่องไม่ครบ (regex ไม่ match) จะถูกปล่อยผ่านเป็นข้อความดิบ ไม่พัง
 export function renderTiramisuUiTags(text) {
@@ -128,5 +180,6 @@ export function renderTiramisuUiTags(text) {
     out = replaceTiramisuLog(out);
     out = replaceCharNote(out);
     out = replaceRpgStatus(out);
+    out = replaceLivechat(out);
     return out;
 }

@@ -70,6 +70,11 @@
                         <input type="checkbox" class="tirakit-tui-toggle" data-tirakit-id="charNote" /></label>
                     <label class="tirakit-field-row"><span>RPG Status (การ์ดสถานะผู้ใช้)</span>
                         <input type="checkbox" class="tirakit-tui-toggle" data-tirakit-id="rpgStatus" /></label>
+                    <label class="tirakit-field-row"><span>Livestream Chat (แชทผู้ชมไลฟ์สด)</span>
+                        <input type="checkbox" class="tirakit-tui-toggle" data-tirakit-id="livechat" /></label>
+                    <div class="tirakit-inject-row">
+                        <label>ส่งแชทไลฟ์เข้า prompt กี่ข้อความล่าสุด (0 = ทั้งหมด) <input id="tirakit-livechat-depth" type="number" min="0" class="text_pole" /></label>
+                    </div>
                     <div class="tirakit-inject-row">
                         <label>ตำแหน่ง (โหมด single) <select class="tirakit-pos-select" data-tirakit-group="tiramisuUi"><option value="1">In-chat (ตามความลึก)</option><option value="0">ท้าย story string</option></select></label>
                         <label>ความลึก <input type="number" min="0" class="tirakit-depth-input" data-tirakit-group="tiramisuUi" /></label>

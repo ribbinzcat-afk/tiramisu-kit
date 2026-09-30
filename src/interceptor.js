@@ -43,12 +43,27 @@ function stripDeepPlanning(chat, cotDepth) {
     }
 }
 
+// ตัด <livechat> ของข้อความเก่าที่ลึกเกิน livechatDepth ออกจาก prompt (กันโทเคนบวม — บนจอยังแสดงครบ)
+function stripDeepLivechat(chat, depth) {
+    if (!depth) return;
+    const total = chat.length;
+    for (let i = 0; i < total - depth; i++) {
+        const entry = chat[i];
+        if (entry && typeof entry.mes === "string" && entry.mes.includes("<livechat")) {
+            entry.mes = entry.mes.replace(/\s*<livechat\b[^>]*>[\s\S]*?<\/livechat>/gi, "");
+        }
+    }
+}
+
 export async function tiramisuKitInterceptor(chat, contextSize, abort, type) {
     try {
         const settings = getSettings();
         if (!settings.enabled) return;
 
-        if (Array.isArray(chat)) stripDeepPlanning(chat, settings.cotDepth || 0);
+        if (Array.isArray(chat)) {
+            stripDeepPlanning(chat, settings.cotDepth || 0);
+            stripDeepLivechat(chat, settings.livechatDepth ?? 2);
+        }
 
         if (settings.genMode === "split" && settings.cotEnabled && type !== "quiet") {
             const ctx = SillyTavern.getContext();

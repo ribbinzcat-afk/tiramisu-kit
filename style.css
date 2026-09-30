@@ -393,3 +393,8 @@
 .tirakit-inline-form input[type="text"] {
     flex: 1 1 160px;
 }
+
+/* ===== Livestream Chat (จุด LIVE กะพริบ — อ้างถึงจาก inline style ใน render/templates.js) ===== */
+@keyframes tirakit-live-blink {
+    50% { opacity: 0.25; }
+}

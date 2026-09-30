@@ -65,7 +65,7 @@ export async function runPostGeneration(ctx, mesId) {
 
     const tuiOn = settings.tiramisuUi || {};
     const theatreOn = settings.theatre || {};
-    const wantTui = Boolean(tuiOn.log || tuiOn.charNote || tuiOn.rpgStatus);
+    const wantTui = modulesInGroup("tiramisuUi").some((m) => tuiOn[m.id]);
     const wantTheatre = Boolean(theatreOn.artDirection && (theatreOn.forum || theatreOn.abo || theatreOn.interview));
     if (!wantTui && !wantTheatre) return;
 
@@ -82,7 +82,7 @@ export async function runPostGeneration(ctx, mesId) {
             for (const mod of modulesInGroup("tiramisuUi")) {
                 if (!tuiOn[mod.id]) continue;
                 try {
-                    const raw = await withStatus(mod.label, () => genTag(ctx, "tiramisuUi", mod.promptId, context, 300, settings));
+                    const raw = await withStatus(mod.label, () => genTag(ctx, "tiramisuUi", mod.promptId, context, mod.maxTokens || 300, settings));
                     const tag = extractTag(raw, mod.tag);
                     if (tag) {
                         appended += `\n\n${tag}`;

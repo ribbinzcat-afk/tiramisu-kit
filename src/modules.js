@@ -35,6 +35,7 @@ export const MODULES = [
     { id: "log", group: "tiramisuUi", label: "Tiramisu's Log", promptId: "log", tag: "tiramisu_log", fields: 6, splittable: true },
     { id: "charNote", group: "tiramisuUi", label: "Char's Note", promptId: "charNote", tag: "char_note", fields: 1, splittable: true },
     { id: "rpgStatus", group: "tiramisuUi", label: "RPG Status", promptId: "rpgStatus", tag: "rpg_status", fields: 9, splittable: true },
+    { id: "livechat", group: "tiramisuUi", label: "Livestream Chat", promptId: "livechat", tag: "livechat", splittable: true, maxTokens: 450 },
 
     // ===== Mini Theatre (artDirection = ฐาน ต้องเปิดก่อนใช้ตัวย่อย, เจนแยกได้) =====
     { id: "artDirection", group: "theatre", label: "Art Direction (ฐาน)", promptId: "theatreArtDirection", isBase: true, splittable: true },
