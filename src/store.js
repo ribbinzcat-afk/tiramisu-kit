@@ -25,7 +25,8 @@ export const defaultSettings = {
     uiCustomText: "",         // เนื้อหาที่ผู้ใช้กรอกเองเมื่อเลือก custom
     selectedDialogue: "",     // "" | light | dark
     rngEnabled: false,
-    tiramisuUi: { log: false, charNote: false, rpgStatus: false },
+    tiramisuUi: { log: false, charNote: false, rpgStatus: false, livechat: false },
+    livechatDepth: 2,        // ส่งแชทไลฟ์เข้า prompt แค่ N ข้อความหลังสุด (0 = ไม่จำกัด) — บนจอยังแสดงครบ
     theatre: { artDirection: false, forum: false, abo: false, interview: false },
     cotEnabled: false,
 
@@ -65,6 +66,9 @@ export function getSettings() {
     }
     // type-guard ระดับลึก กันผู้ใช้เก่าที่มีคีย์แต่ shape ไม่ตรง (เช่นเคยเป็น object เปล่า)
     if (!s.tiramisuUi || typeof s.tiramisuUi !== "object") s.tiramisuUi = structuredClone(defaultSettings.tiramisuUi);
+    for (const k of Object.keys(defaultSettings.tiramisuUi)) {
+        if (typeof s.tiramisuUi[k] !== "boolean") s.tiramisuUi[k] = false; // ผู้ใช้เก่าไม่มีคีย์โมดูลใหม่
+    }
     if (!s.theatre || typeof s.theatre !== "object") s.theatre = structuredClone(defaultSettings.theatre);
     if (!s.injectPos || typeof s.injectPos !== "object") s.injectPos = structuredClone(defaultSettings.injectPos);
     for (const g of Object.keys(defaultSettings.injectPos)) {

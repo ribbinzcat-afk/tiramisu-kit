@@ -146,6 +146,7 @@ function loadPanelUi() {
 
     $("#tirakit-cot-enabled").prop("checked", Boolean(s.cotEnabled));
     $("#tirakit-cot-depth").val(s.cotDepth ?? 0);
+    $("#tirakit-livechat-depth").val(s.livechatDepth ?? 2);
     $("#tirakit-cot-autoopen").prop("checked", Boolean(s.cotAutoOpen));
     $("#tirakit-cot-ctxmsgs").val(s.cotContextMessages ?? 6);
 
@@ -491,6 +492,9 @@ function bindUiHandlers() {
         setSetting("cotEnabled", $(this).prop("checked"));
         applyInjections(getContext());
         sweepAllMessages(getContext());
+    });
+    $(document).on("change", "#tirakit-livechat-depth", function () {
+        setSetting("livechatDepth", Math.max(0, Number($(this).val()) || 0));
     });
     $(document).on("change", "#tirakit-cot-depth", function () {
         setSetting("cotDepth", Math.max(0, Number($(this).val()) || 0));

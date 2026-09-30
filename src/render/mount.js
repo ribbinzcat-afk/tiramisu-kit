@@ -17,7 +17,7 @@ import { renderTiramisuUiTags } from "./templates.js";
 import { extractPlanning, renderCotBox, stripPlanning } from "./cot-box.js";
 import { getSettings, extensionName } from "../store.js";
 
-const TAG_TEST_RE = /<(tiramisu_log|char_note|rpg_status|planning)\b/i;
+const TAG_TEST_RE = /<(tiramisu_log|char_note|rpg_status|livechat|planning)\b/i;
 
 // cache กัน re-render ซ้ำเปล่าๆ: mesId -> { rawText, sig }
 const renderCache = new Map();
@@ -25,14 +25,14 @@ const renderCache = new Map();
 function computeSig(settings, depthFromEnd) {
     const t = settings.tiramisuUi || {};
     const cotVisible = settings.cotDepth === 0 || depthFromEnd < settings.cotDepth ? 1 : 0;
-    return `${t.log ? 1 : 0}${t.charNote ? 1 : 0}${t.rpgStatus ? 1 : 0}|${cotVisible}|${settings.cotAutoOpen ? 1 : 0}`;
+    return `${t.log ? 1 : 0}${t.charNote ? 1 : 0}${t.rpgStatus ? 1 : 0}${t.livechat ? 1 : 0}|${cotVisible}|${settings.cotAutoOpen ? 1 : 0}`;
 }
 
 // คืนข้อความที่แปลงแท็กแล้วตามโมดูลที่เปิดอยู่จริง + กติกาความลึกของ CoT
 function buildRenderedText(rawText, settings, depthFromEnd) {
     let out = String(rawText ?? "");
     const tuiOn = settings.tiramisuUi || {};
-    if (tuiOn.log || tuiOn.charNote || tuiOn.rpgStatus) {
+    if (Object.values(tuiOn).some(Boolean)) {
         out = renderTiramisuUiTags(out); // regex ไม่ match (โมดูลปิดหรือช่องไม่ครบ) = ปล่อยผ่าน ปลอดภัย
     }
 
