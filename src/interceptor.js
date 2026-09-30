@@ -18,6 +18,7 @@ import { buildPrompt } from "./prompts.js";
 import { buildCotContext } from "./context.js";
 import { withStatus } from "./status.js";
 import { getCurrentPresetName, detectVariant } from "./preset.js";
+import { stripSayTags } from "./dialogue/render.js";
 
 let pendingCot = null; // { text, ms } — ผลลัพธ์ CoT รอบล่าสุดที่ยังไม่ได้แปะเข้า mes
 
@@ -55,6 +56,16 @@ function stripDeepLivechat(chat, depth) {
     }
 }
 
+// แปลง <say> ของข้อความที่ลึกเกิน promptDepth เป็น "ชื่อ: บทพูด" ใน prompt ที่ส่ง (ไฟล์แชทจริงไม่ถูกแตะ)
+function stripDeepSay(chat, depth) {
+    if (!depth) return;
+    const total = chat.length;
+    for (let i = 0; i < total - depth; i++) {
+        const entry = chat[i];
+        if (entry && typeof entry.mes === "string" && entry.mes.includes("<say")) entry.mes = stripSayTags(entry.mes);
+    }
+}
+
 export async function tiramisuKitInterceptor(chat, contextSize, abort, type) {
     try {
         const settings = getSettings();
@@ -63,6 +74,7 @@ export async function tiramisuKitInterceptor(chat, contextSize, abort, type) {
         if (Array.isArray(chat)) {
             stripDeepPlanning(chat, settings.cotDepth || 0);
             stripDeepLivechat(chat, settings.livechatDepth ?? 2);
+            stripDeepSay(chat, settings.dialogue?.promptDepth ?? 2);
         }
 
         if (settings.genMode === "split" && settings.cotEnabled && type !== "quiet") {

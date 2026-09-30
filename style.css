@@ -398,3 +398,216 @@
 @keyframes tirakit-live-blink {
     50% { opacity: 0.25; }
 }
+
+/* ===================================================================
+   Dialogue — กล่องบทพูดในแชท
+   ST เติม "custom-" หน้าคลาสทุกตัวในข้อความ จึงต้องเขียนเป็น .custom-tirakit-dlg-*
+   สีประจำตัวละครส่งมาทาง inline style: --tirakit-c
+   =================================================================== */
+.mes_text .custom-tirakit-dlg {
+    --tirakit-dlg-bg: var(--SmartThemeBlurTintColor, rgba(30, 29, 36, 0.9));
+    --tirakit-dlg-fg: var(--SmartThemeBodyColor, #e6e3ee);
+    display: flex;
+    gap: 10px;
+    margin: 12px 0;
+    color: var(--tirakit-dlg-fg);
+}
+.mes_text .custom-tirakit-dlg-pic {
+    position: relative;
+    flex: 0 0 auto;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: linear-gradient(135deg, var(--tirakit-c), rgba(0, 0, 0, 0.55));
+}
+.mes_text .custom-tirakit-dlg-pic b { font-size: 1.05em; }
+.mes_text .custom-tirakit-dlg-mood {
+    font-size: 0.78em;
+    font-weight: 600;
+    opacity: 0.8;
+    margin-left: 6px;
+}
+.mes_text .custom-tirakit-dlg-mood::before { content: "· "; }
+.mes_text .custom-tirakit-dlg q { color: inherit; }
+.mes_text .custom-tirakit-dlg-t q { color: inherit; }
+
+/* ----- ธีมแชทเมสเสจเจอร์ ----- */
+.mes_text .custom-tirakit-dlg-msg { align-items: flex-end; gap: 8px; }
+.mes_text .custom-tirakit-dlg-msg.custom-tirakit-dlg-r { flex-direction: row-reverse; }
+.mes_text .custom-tirakit-dlg-msg .custom-tirakit-dlg-pic { width: 36px; height: 36px; border-radius: 50%; }
+.mes_text .custom-tirakit-dlg-col { display: flex; flex-direction: column; max-width: 80%; min-width: 0; }
+.mes_text .custom-tirakit-dlg-r .custom-tirakit-dlg-col { align-items: flex-end; }
+.mes_text .custom-tirakit-dlg-msg .custom-tirakit-dlg-name { font-size: 0.78em; font-weight: 700; color: var(--tirakit-c); margin: 0 12px 2px; }
+.mes_text .custom-tirakit-dlg-bub {
+    padding: 7px 13px;
+    border-radius: 18px 18px 18px 5px;
+    background: color-mix(in srgb, var(--tirakit-c) 14%, var(--tirakit-dlg-bg));
+    border-left: 3px solid var(--tirakit-c);
+    word-break: break-word;
+}
+.mes_text .custom-tirakit-dlg-r .custom-tirakit-dlg-bub {
+    border-radius: 18px 18px 5px 18px;
+    border-left: 0;
+    border-right: 3px solid var(--tirakit-c);
+}
+
+/* ----- ธีมวิชวลโนเวล ----- */
+.mes_text .custom-tirakit-dlg-vn { position: relative; display: block; margin: 20px 0 14px; padding-left: 82px; min-height: 120px; }
+.mes_text .custom-tirakit-dlg-vn.custom-tirakit-dlg-r { padding-left: 0; padding-right: 82px; }
+.mes_text .custom-tirakit-dlg-vn .custom-tirakit-dlg-pic {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 90px;
+    height: 120px;
+    border-radius: 12px 12px 0 0;
+    border-bottom: 3px solid var(--tirakit-c);
+    z-index: 2;
+    font-size: 2em;
+    background: linear-gradient(180deg, var(--tirakit-c), rgba(0, 0, 0, 0.7));
+}
+.mes_text .custom-tirakit-dlg-vn.custom-tirakit-dlg-r .custom-tirakit-dlg-pic { left: auto; right: 0; }
+.mes_text .custom-tirakit-dlg-box {
+    position: relative;
+    min-height: 100px;
+    padding: 18px 16px 14px 24px;
+    border-radius: 0 12px 12px 12px;
+    border: 1.5px solid color-mix(in srgb, var(--tirakit-c) 30%, transparent);
+    border-top: 2px solid var(--tirakit-c);
+    background: color-mix(in srgb, var(--tirakit-dlg-bg) 92%, #000);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    word-break: break-word;
+}
+.mes_text .custom-tirakit-dlg-r .custom-tirakit-dlg-box { border-radius: 12px 0 12px 12px; padding: 18px 24px 14px 16px; }
+.mes_text .custom-tirakit-dlg-plate {
+    position: absolute;
+    top: -13px;
+    left: 14px;
+    padding: 1px 14px;
+    border-radius: 6px;
+    background: var(--tirakit-c);
+    color: #16141c;
+    font-weight: 700;
+    font-size: 0.85em;
+    transform: skewX(-12deg);
+}
+.mes_text .custom-tirakit-dlg-plate > span { display: inline-block; transform: skewX(12deg); }
+.mes_text .custom-tirakit-dlg-r .custom-tirakit-dlg-plate { left: auto; right: 14px; }
+.mes_text .custom-tirakit-dlg-plate .custom-tirakit-dlg-mood { color: #16141c; }
+.mes_text .custom-tirakit-dlg-next {
+    position: absolute;
+    right: 12px;
+    bottom: 6px;
+    font-size: 0.7em;
+    color: var(--tirakit-c);
+    animation: tirakit-dlg-bob 1.2s ease-in-out infinite;
+}
+.mes_text .custom-tirakit-dlg-r .custom-tirakit-dlg-next { right: auto; left: 12px; }
+@keyframes tirakit-dlg-bob { 50% { transform: translateY(3px); } }
+
+/* ----- ธีมเรียบง่าย ----- */
+.mes_text .custom-tirakit-dlg-simple { align-items: flex-start; }
+.mes_text .custom-tirakit-dlg-simple.custom-tirakit-dlg-r { flex-direction: row-reverse; text-align: right; }
+.mes_text .custom-tirakit-dlg-simple .custom-tirakit-dlg-pic { width: 42px; height: 42px; border-radius: 10px; }
+.mes_text .custom-tirakit-dlg-st { min-width: 0; border-left: 2px solid var(--tirakit-c); padding-left: 10px; }
+.mes_text .custom-tirakit-dlg-r .custom-tirakit-dlg-st { border-left: 0; border-right: 2px solid var(--tirakit-c); padding: 0 10px 0 0; }
+.mes_text .custom-tirakit-dlg-simple .custom-tirakit-dlg-name { font-weight: 700; font-size: 0.88em; color: var(--tirakit-c); }
+
+@media (max-width: 480px) {
+    .mes_text .custom-tirakit-dlg-vn { padding-left: 60px; min-height: 92px; }
+    .mes_text .custom-tirakit-dlg-vn.custom-tirakit-dlg-r { padding-right: 60px; }
+    .mes_text .custom-tirakit-dlg-vn .custom-tirakit-dlg-pic { width: 66px; height: 88px; }
+    .mes_text .custom-tirakit-dlg-simple .custom-tirakit-dlg-pic { width: 36px; height: 36px; }
+    .mes_text .custom-tirakit-dlg-col { max-width: 86%; }
+}
+
+/* ===== Dialogue — แท็บตัวละครในแผง ===== */
+.tirakit-dlg-opts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    margin: 8px 0;
+}
+.tirakit-dlg-opts label { display: flex; flex-direction: column; gap: 3px; font-size: 0.85em; opacity: 0.9; }
+.tirakit-dlg-row {
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 10px;
+    padding: 10px;
+    margin: 8px 0;
+}
+.tirakit-dlg-row-main { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.tirakit-dlg-row-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.tirakit-dlg-row-name { font-weight: 700; }
+.tirakit-dlg-row-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+.tirakit-dlg-thumb {
+    position: relative;
+    flex: 0 0 56px;
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid var(--tirakit-c);
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 1.3em;
+    background: linear-gradient(135deg, var(--tirakit-c), rgba(0, 0, 0, 0.5));
+}
+.tirakit-dlg-thumb img { position: absolute; max-width: none; max-height: none; }
+.tirakit-dlg-thumb-sm { flex-basis: 34px; width: 34px; height: 34px; border-radius: 8px; font-size: 0.9em; }
+.tirakit-dlg-icon { min-width: 36px; min-height: 36px; margin: 0; display: inline-grid; place-items: center; position: relative; }
+.tirakit-dlg-icon[disabled] { opacity: 0.35; pointer-events: none; }
+.tirakit-dlg-mini { position: absolute; right: 4px; bottom: 3px; font-size: 0.6em; }
+.tirakit-dlg-danger { color: #ff8a8a; }
+.tirakit-dlg-color {
+    width: 36px;
+    height: 36px;
+    padding: 2px;
+    border-radius: 8px;
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    background: transparent;
+    cursor: pointer;
+}
+.tirakit-dlg-moods { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--SmartThemeBorderColor, #444); }
+.tirakit-dlg-mood-list { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.tirakit-dlg-mood-chip { display: flex; align-items: center; gap: 8px; }
+.tirakit-dlg-mood-chip span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tirakit-dlg-mood-add { display: flex; gap: 6px; flex-wrap: wrap; }
+.tirakit-dlg-mood-add input { flex: 1; min-width: 140px; margin: 0; }
+.tirakit-dlg-bottom { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+/* ตัวครอป */
+.tirakit-dlg-crop {
+    position: fixed;
+    inset: 0;
+    z-index: 10001;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 12px;
+}
+.tirakit-dlg-crop.tirakit-hidden { display: none; }
+.tirakit-dlg-crop, .tirakit-dlg-crop * { box-sizing: border-box; }
+.tirakit-dlg-crop-card {
+    width: min(560px, 96vw);
+    max-height: 92dvh;
+    overflow: auto;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--SmartThemeBlurTintColor, #1e1e1e);
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    color: var(--SmartThemeBodyColor, #ddd);
+}
+.tirakit-dlg-crop-stage { position: relative; width: fit-content; max-width: 100%; margin: 10px auto; touch-action: none; user-select: none; }
+.tirakit-dlg-crop-img { display: block; max-width: 100%; max-height: 55dvh; }
+.tirakit-dlg-crop-rect {
+    position: absolute;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+    cursor: move;
+    touch-action: none;
+}
+.tirakit-dlg-crop-stage { overflow: hidden; }
+.tirakit-dlg-crop-size-row { display: flex; align-items: center; gap: 8px; }
+.tirakit-dlg-crop-size-row input { flex: 1; }

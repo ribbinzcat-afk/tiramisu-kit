@@ -16,21 +16,56 @@
 import { renderTiramisuUiTags } from "./templates.js";
 import { extractPlanning, renderCotBox, stripPlanning } from "./cot-box.js";
 import { getSettings, extensionName } from "../store.js";
+import { renderDialogue, SAY_TEST_RE, QUOTE_TEST_RE } from "../dialogue/render.js";
+import { getRoster, getRosterVersion, getPersonaKey } from "../dialogue/data.js";
 
 const TAG_TEST_RE = /<(tiramisu_log|char_note|rpg_status|livechat|planning)\b/i;
 
 // cache กัน re-render ซ้ำเปล่าๆ: mesId -> { rawText, sig }
 const renderCache = new Map();
 
+function dialogueActive(settings) {
+    return Boolean(settings.enabled) && (settings.selectedDialogue === "text" || settings.selectedDialogue === "ui");
+}
+
+// โหมด UI เฉพาะ N ข้อความล่าสุด (0 = ทุกข้อความ) — ที่เก่ากว่านั้นแสดงเป็นข้อความสี
+function dialogueUseUi(settings, depthFromEnd) {
+    if (settings.selectedDialogue !== "ui") return false;
+    const d = Number(settings.dialogue?.uiDepth) || 0;
+    return d === 0 || depthFromEnd < d;
+}
+
+function wantsDialogue(settings, message, rawText) {
+    if (!dialogueActive(settings)) return false;
+    if (SAY_TEST_RE.test(rawText)) return true;
+    return Boolean(message.is_user && settings.dialogue?.userQuotes && QUOTE_TEST_RE.test(rawText));
+}
+
 function computeSig(settings, depthFromEnd) {
     const t = settings.tiramisuUi || {};
     const cotVisible = settings.cotDepth === 0 || depthFromEnd < settings.cotDepth ? 1 : 0;
-    return `${t.log ? 1 : 0}${t.charNote ? 1 : 0}${t.rpgStatus ? 1 : 0}${t.livechat ? 1 : 0}|${cotVisible}|${settings.cotAutoOpen ? 1 : 0}`;
+    const d = settings.dialogue || {};
+    const dlg = dialogueActive(settings)
+        ? `${settings.selectedDialogue}${dialogueUseUi(settings, depthFromEnd) ? 1 : 0}${d.theme}${d.tone}${d.userQuotes ? 1 : 0}${getRosterVersion()}${getPersonaKey()}`
+        : "-";
+    return `${t.log ? 1 : 0}${t.charNote ? 1 : 0}${t.rpgStatus ? 1 : 0}${t.livechat ? 1 : 0}|${cotVisible}|${settings.cotAutoOpen ? 1 : 0}|${dlg}`;
 }
 
 // คืนข้อความที่แปลงแท็กแล้วตามโมดูลที่เปิดอยู่จริง + กติกาความลึกของ CoT
-function buildRenderedText(rawText, settings, depthFromEnd) {
+function buildRenderedText(rawText, settings, depthFromEnd, ctx, message) {
     let out = String(rawText ?? "");
+    if (wantsDialogue(settings, message, out)) {
+        const d = settings.dialogue || {};
+        out = renderDialogue(out, {
+            ctx,
+            roster: getRoster(ctx),
+            isUser: Boolean(message.is_user),
+            ui: dialogueUseUi(settings, depthFromEnd),
+            theme: d.theme || "messenger",
+            tone: d.tone || "dark",
+            userQuotes: Boolean(d.userQuotes),
+        });
+    }
     const tuiOn = settings.tiramisuUi || {};
     if (Object.values(tuiOn).some(Boolean)) {
         out = renderTiramisuUiTags(out); // regex ไม่ match (โมดูลปิดหรือช่องไม่ครบ) = ปล่อยผ่าน ปลอดภัย
@@ -61,17 +96,21 @@ function renderOneMessage(ctx, mesId, depthFromEnd) {
         return;
     }
     const rawText = message.extra?.display_text ?? message.mes;
-    if (typeof rawText !== "string" || !TAG_TEST_RE.test(rawText)) {
-        renderCache.delete(mesId);
+    const settings = getSettings();
+    if (typeof rawText !== "string" || !(TAG_TEST_RE.test(rawText) || wantsDialogue(settings, message, rawText))) {
+        if (renderCache.has(mesId)) {
+            // เคยวาดทับไว้แต่ตอนนี้ไม่ต้องแล้ว (เช่นปิดโมดูล) — คืนการแสดงผลปกติของ ST
+            renderCache.delete(mesId);
+            restorePlain(ctx, mesId, message, rawText);
+        }
         return;
     }
 
-    const settings = getSettings();
     const sig = computeSig(settings, depthFromEnd);
     const cached = renderCache.get(mesId);
     if (cached && cached.rawText === rawText && cached.sig === sig) return; // ไม่มีอะไรเปลี่ยน ข้าม
 
-    const rendered = buildRenderedText(rawText, settings, depthFromEnd);
+    const rendered = buildRenderedText(rawText, settings, depthFromEnd, ctx, message);
     try {
         if (typeof ctx.messageFormatting !== "function") return;
         const html = ctx.messageFormatting(rendered, message.name, message.is_system, message.is_user, mesId);
@@ -80,6 +119,17 @@ function renderOneMessage(ctx, mesId, depthFromEnd) {
         renderCache.set(mesId, { rawText, sig });
     } catch (e) {
         console.error(`[${extensionName}] render ข้อความ #${mesId} ล้มเหลว:`, e);
+    }
+}
+
+function restorePlain(ctx, mesId, message, rawText) {
+    try {
+        if (typeof ctx.messageFormatting !== "function" || typeof rawText !== "string") return;
+        const html = ctx.messageFormatting(rawText, message.name, message.is_system, message.is_user, mesId);
+        const $mesText = $(`#chat [mesid="${mesId}"] .mes_text`);
+        if ($mesText.length) $mesText.html(html);
+    } catch (e) {
+        console.error(`[${extensionName}] คืนการแสดงผลข้อความ #${mesId} ล้มเหลว:`, e);
     }
 }
 
