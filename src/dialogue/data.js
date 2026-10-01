@@ -156,7 +156,9 @@ export function resolveSpeaker(ctx, roster, name) {
     const persona = getPersonaEntry(ctx);
     if (n === normName(persona.name)) return { entry: persona, defaultSrc: persona.defaultSrc, isUser: true };
 
-    for (const e of Object.values(roster.entries)) {
+    // ตัวละครของการ์ดมาก่อน NPC — ถ้าเคยมี NPC ชื่อซ้ำกับชื่อเรียกอื่นของตัวละครหลัก ให้ตัวละครหลักชนะ
+    const ordered = Object.values(roster.entries).sort((a, b) => (a.id === CHAR_ID ? -1 : b.id === CHAR_ID ? 1 : 0));
+    for (const e of ordered) {
         if (normName(e.name) === n || (e.aliases || []).some((a) => normName(a) === n)) {
             return { entry: e, defaultSrc: defaultSrcFor(ctx, e) };
         }
@@ -171,9 +173,9 @@ export function resolveSpeaker(ctx, roster, name) {
         const group = ctx.groups?.find((g) => g.id === ctx.groupId);
         for (const av of group?.members || []) {
             const ch = ctx.characters?.find((c) => c.avatar === av);
-            if (ch && normName(ch.name) === n) {
-                const own = ch.data?.extensions?.[CARD_FIELD]?.entries?.[CHAR_ID];
-                const e = { id: `member:${av}`, name: ch.name, aliases: [], color: own?.color || "", img: own?.img || null, moods: own?.moods || {} };
+            const own = ch?.data?.extensions?.[CARD_FIELD]?.entries?.[CHAR_ID];
+            if (ch && (normName(ch.name) === n || (own?.aliases || []).some((a) => normName(a) === n))) {
+                const e = { id: `member:${av}`, name: ch.name, aliases: own?.aliases || [], color: own?.color || "", img: own?.img || null, moods: own?.moods || {} };
                 return { entry: e, defaultSrc: thumbUrl(ctx, "avatar", av) };
             }
         }
