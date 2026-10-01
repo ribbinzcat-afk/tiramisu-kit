@@ -81,14 +81,14 @@ function moodsHtml(id, entry) {
         </div>`;
 }
 
-function rowHtml(id, entry, { fallbackSrc = "", sub = "", editableName = false, removable = false, moods = true } = {}) {
+function rowHtml(id, entry, { fallbackSrc = "", sub = "", editableName = false, editableAlias = editableName, removable = false, moods = true } = {}) {
     const color = entry.color || fallbackColor(tone(), entry.name);
     const hasImg = Boolean(entry.img?.path);
     const eid = escapeText(id);
     const nameHtml = editableName
         ? `<input type="text" class="text_pole tirakit-dlg-name-input" data-dlg-field="name" data-dlg-id="${eid}" value="${escapeText(entry.name)}">`
         : `<div class="tirakit-dlg-row-name" style="color:${escapeText(color)}">${escapeText(entry.name)}</div>`;
-    const aliasHtml = editableName
+    const aliasHtml = editableAlias
         ? `<input type="text" class="text_pole tirakit-dlg-alias-input" data-dlg-field="aliases" data-dlg-id="${eid}" value="${escapeText((entry.aliases || []).join(", "))}" placeholder="ชื่อเรียกอื่น คั่นด้วย ,">`
         : "";
     return `
@@ -143,7 +143,7 @@ export function renderDialogueTab() {
     if (scope.kind === "card") {
         const charEntry = readEntry(ctx, CHAR_ID);
         const src = typeof ctx.getThumbnailUrl === "function" ? ctx.getThumbnailUrl("avatar", scope.character.avatar) : "";
-        html += rowHtml(CHAR_ID, charEntry, { fallbackSrc: src, sub: "ตัวละครของการ์ด · ไม่อัปโหลดรูป = ใช้อวาตาร์การ์ด" });
+        html += rowHtml(CHAR_ID, charEntry, { fallbackSrc: src, editableAlias: true, sub: "ตัวละครของการ์ด · ไม่อัปโหลดรูป = ใช้อวาตาร์การ์ด" });
     }
 
     const npcs = Object.values(roster.entries).filter((e) => e.id !== CHAR_ID)
@@ -454,6 +454,11 @@ export function bindDialogueHandlers(onChange) {
         } else if (field === "aliases") {
             const aliases = val.split(",").map((s) => s.trim()).filter(Boolean);
             writeEntry(ctx, id, (e) => { e.aliases = aliases; return e; });
+            // เตือนถ้าชื่อเรียกอื่นไปซ้ำกับ NPC ที่มีอยู่ (มักเป็น NPC ที่ระบบเพิ่มอัตโนมัติจากชื่อเล่น)
+            const dupes = Object.values(getRoster(ctx).entries)
+                .filter((e) => e.id !== id && aliases.some((a) => normName(a) === normName(e.name)))
+                .map((e) => e.name);
+            if (dupes.length) toastr.info(`มี NPC ชื่อ ${dupes.join(", ")} อยู่แล้ว — ลบ NPC นั้นได้ถ้าเป็นคนเดียวกัน`, "Tiramisu Kit", { timeOut: 8000 });
         }
     });
 
