@@ -16,6 +16,8 @@
 import { renderTiramisuUiTags } from "./templates.js";
 import { extractPlanning, renderCotBox, stripPlanning } from "./cot-box.js";
 import { getSettings, extensionName } from "../store.js";
+// namespace import — ST รุ่นเก่าที่ไม่มี addCopyToCodeBlocks จะไม่ทำให้โมดูลโหลดพัง
+import * as stScript from "../../../../../../script.js";
 import { renderDialogue, SAY_TEST_RE, QUOTE_TEST_RE } from "../dialogue/render.js";
 import { getRoster, getRosterVersion, getPersonaKey } from "../dialogue/data.js";
 
@@ -88,7 +90,8 @@ function dialogueUseUi(settings, depthFromEnd) {
 }
 
 function wantsDialogue(settings, message, rawText) {
-    if (!dialogueActive(settings)) return false;
+    // มี MessageFormatter hook แล้ว ST วาด <say> เองทุกครั้ง — ไม่ต้องวาดทับ (การวาดทับลบปุ่ม copy ของ code block ทิ้ง)
+    if (dialogueHookInstalled || !dialogueActive(settings)) return false;
     if (SAY_TEST_RE.test(rawText)) return true;
     return Boolean(message.is_user && settings.dialogue?.userQuotes && QUOTE_TEST_RE.test(rawText));
 }
@@ -171,10 +174,21 @@ function renderOneMessage(ctx, mesId, depthFromEnd) {
         if ($mesText.length) {
             $mesText.html(html);
             $mesText.append(`<i class="${MARKER_CLASS}" hidden></i>`);
+            restoreCodeBlocks($mesText);
         }
         renderCache.set(mesId, { rawText, sig });
     } catch (e) {
         console.error(`[${extensionName}] render ข้อความ #${mesId} ล้มเหลว:`, e);
+    }
+}
+
+// .html() ล้างปุ่ม copy + syntax highlight ที่ ST ใส่ให้ code block ไว้ — ใส่คืนแบบเดียวกับที่ ST ทำ
+function restoreCodeBlocks($mesText) {
+    try {
+        if (!$mesText.find("pre code").length) return;
+        if (typeof stScript.addCopyToCodeBlocks === "function") stScript.addCopyToCodeBlocks($mesText.closest(".mes"));
+    } catch (e) {
+        console.warn(`[${extensionName}] ใส่ปุ่ม copy ให้ code block ไม่สำเร็จ:`, e);
     }
 }
 
@@ -183,7 +197,10 @@ function restorePlain(ctx, mesId, message, rawText) {
         if (typeof ctx.messageFormatting !== "function" || typeof rawText !== "string") return;
         const html = ctx.messageFormatting(rawText, message.name, message.is_system, message.is_user, mesId);
         const $mesText = $(`#chat [mesid="${mesId}"] .mes_text`);
-        if ($mesText.length) $mesText.html(html);
+        if ($mesText.length) {
+            $mesText.html(html);
+            restoreCodeBlocks($mesText);
+        }
     } catch (e) {
         console.error(`[${extensionName}] คืนการแสดงผลข้อความ #${mesId} ล้มเหลว:`, e);
     }
